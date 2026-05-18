@@ -1,0 +1,445 @@
+:root {
+  --bg: #0b1326;
+  --surface: rgba(23, 31, 51, 0.85);
+  --cyan: #8aebff;
+  --amber: #ffb783;
+  --on-surface: #dae2fd;
+  --dock-w: 220px;
+  --header-h: 48px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: Inter, system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--on-surface);
+  height: 100vh;
+  overflow: hidden;
+}
+
+body.game-page {
+  position: relative;
+}
+
+/* Khi intro mở: chặn toàn bộ UI phía dưới (canvas Phaser vẫn có thể “ăn” click nếu chỉ dựa vào z-index). */
+body.game-page.match-intro-open {
+  pointer-events: none;
+}
+
+body.game-page.match-intro-open #match-intro {
+  pointer-events: auto;
+}
+
+.match-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(11, 19, 38, 0.88);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  isolation: isolate;
+}
+
+.match-intro-card {
+  max-width: 420px;
+  padding: 24px 28px;
+  border-radius: 10px;
+  border: 1px solid rgba(138, 235, 255, 0.35);
+  background: rgba(23, 31, 51, 0.95);
+  box-shadow: 0 0 24px rgba(34, 211, 238, 0.12);
+}
+
+.match-intro-card h2 {
+  font-family: Geist, system-ui, sans-serif;
+  font-size: 22px;
+  color: var(--cyan);
+  margin-bottom: 16px;
+}
+
+.match-intro-steps {
+  margin: 0 0 20px 1.1em;
+  padding: 0;
+  color: var(--on-surface);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.match-intro-steps li {
+  margin-bottom: 8px;
+}
+
+.match-intro-btn {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  touch-action: manipulation;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #00363e;
+  background: linear-gradient(90deg, #22d3ee, #2fd9f4);
+}
+
+.match-intro-btn:hover {
+  filter: brightness(1.06);
+}
+
+.match-intro-skip {
+  margin-top: 12px;
+  font-size: 11px;
+  opacity: 0.55;
+  text-align: center;
+}
+
+.hud-header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--header-h);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 24px;
+  background: var(--surface);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(138, 235, 255, 0.2);
+  z-index: 100;
+}
+
+.hud-brand {
+  font-family: Geist, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--cyan);
+  font-size: 14px;
+}
+
+.hud-phase {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  opacity: 0.6;
+  text-transform: uppercase;
+}
+
+.hud-link {
+  margin-left: auto;
+  color: var(--cyan);
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.hud-dock {
+  position: fixed;
+  left: 0;
+  top: var(--header-h);
+  bottom: 0;
+  width: var(--dock-w);
+  padding: 16px;
+  background: rgba(45, 52, 73, 0.75);
+  backdrop-filter: blur(12px);
+  border-right: 1px solid rgba(138, 235, 255, 0.15);
+  z-index: 150;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hud-dock h2 {
+  font-family: Geist, sans-serif;
+  font-size: 18px;
+  color: var(--amber);
+  margin-bottom: 4px;
+}
+
+.hud-dock h3 {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  opacity: 0.5;
+  margin-top: 12px;
+}
+
+.dock-btn {
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--on-surface);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+}
+
+.dock-btn.dock-btn--tower,
+.dock-btn.send {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.dock-btn .dock-label {
+  font-weight: 600;
+}
+
+.dock-btn .dock-price {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--amber);
+  opacity: 0.92;
+}
+
+.dock-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.dock-btn.active:disabled {
+  opacity: 0.45;
+}
+
+.dock-btn:hover { background: rgba(138, 235, 255, 0.08); }
+.dock-btn.active {
+  background: #d97722;
+  color: #451f00;
+  border-color: rgba(255, 183, 131, 0.4);
+}
+
+.dock-btn.send:hover { border-color: var(--amber); }
+
+.dock-hint {
+  margin-top: auto;
+  font-size: 10px;
+  opacity: 0.45;
+  line-height: 1.4;
+}
+
+.battle-main {
+  position: fixed;
+  left: var(--dock-w);
+  top: var(--header-h);
+  right: 0;
+  bottom: 0;
+  display: flex;
+}
+
+.battle-main--solo .board-wrap.opponent {
+  display: none;
+}
+
+.battle-main--solo .spine {
+  left: auto;
+  right: 24px;
+  transform: none;
+  top: 16px;
+}
+
+.dock-sends.is-hidden {
+  display: none;
+}
+
+.dock-sends h3 {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  opacity: 0.5;
+  margin-top: 12px;
+}
+
+.board-wrap {
+  flex: 1;
+  position: relative;
+  min-width: 0;
+}
+
+.board-wrap.opponent {
+  filter: saturate(0.75);
+}
+
+.phaser-host {
+  width: 100%;
+  height: 100%;
+  touch-action: manipulation;
+}
+
+.phaser-host canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.spine {
+  position: absolute;
+  left: 50%;
+  top: 24px;
+  transform: translateX(-50%);
+  z-index: 50;
+  text-align: center;
+  padding: 12px 20px;
+  background: var(--surface);
+  border: 1px solid rgba(133, 147, 151, 0.3);
+  border-radius: 0 0 8px 8px;
+  /* Không chặn click xuống bản đồ Phaser bên dưới */
+  pointer-events: none;
+}
+
+.spine .wave {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--amber);
+  letter-spacing: 0.12em;
+}
+
+.spine .timer {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.board-hud {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+  z-index: 40;
+}
+
+.board-hud.mirrored { flex-direction: row-reverse; }
+
+.stat-panel {
+  padding: 12px 16px;
+  background: var(--surface);
+  backdrop-filter: blur(12px);
+  border-radius: 4px;
+  min-width: 140px;
+}
+
+.stat-panel.cyan {
+  box-shadow: inset 0 0 10px rgba(138, 235, 255, 0.15);
+  border: 1px solid rgba(138, 235, 255, 0.25);
+}
+
+.stat-panel.amber {
+  box-shadow: inset 0 0 10px rgba(255, 183, 131, 0.15);
+  border: 1px solid rgba(255, 183, 131, 0.25);
+}
+
+.stat-panel .label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.stat-panel.cyan .label { color: var(--cyan); }
+.stat-panel.amber .label { color: var(--amber); }
+
+.stat-panel .value { font-size: 14px; }
+.stat-panel .value.mono {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.stat-panel.compact { min-width: 100px; }
+
+.stat-row { display: flex; gap: 12px; }
+
+.bar {
+  height: 6px;
+  background: #31394d;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.bar .fill {
+  height: 100%;
+  background: var(--cyan);
+  width: 100%;
+  transition: width 0.3s;
+}
+
+.bar .fill.amber { background: var(--amber); }
+
+@media (max-width: 900px) {
+  /* Dock dưới cùng — vẫn chọn được tháp (không ẩn hẳn) */
+  .hud-dock {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: auto;
+    max-height: 42vh;
+    overflow-x: auto;
+    overflow-y: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 6px;
+    padding: 10px 10px 12px;
+    border-right: none;
+    border-top: 1px solid rgba(138, 235, 255, 0.2);
+    z-index: 150;
+  }
+
+  .hud-dock h2 {
+    width: 100%;
+    font-size: 12px;
+    margin-bottom: 0;
+  }
+
+  .hud-dock h3 {
+    width: 100%;
+    margin-top: 4px;
+  }
+
+  .hud-dock hr {
+    display: none;
+  }
+
+  .dock-btn {
+    flex: 1 1 calc(50% - 6px);
+    min-width: 120px;
+    padding: 8px 10px;
+    font-size: 11px;
+    text-align: center;
+  }
+
+  .dock-hint {
+    width: 100%;
+    margin-top: 4px;
+    font-size: 9px;
+  }
+
+  .battle-main {
+    left: 0;
+    bottom: min(42vh, 220px);
+    flex-direction: column;
+  }
+
+  .battle-main--solo {
+    bottom: min(42vh, 220px);
+  }
+
+  .board-wrap {
+    min-height: 38vh;
+  }
+}

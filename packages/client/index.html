@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html class="dark" lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Battle Towers Online — Trang chủ</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Geist:wght@700;800&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/styles/home.css" />
+</head>
+<body>
+  <div class="home-bg" aria-hidden="true"></div>
+
+  <nav class="home-nav">
+    <span>NETH-STRIKE COMMAND</span>
+    <span class="home-nav-icons">PvP · AI · Sandbox (sắp có)</span>
+  </nav>
+
+  <main class="home-main">
+    <div class="home-logo" role="img" aria-label="Logo"></div>
+    <h1 class="home-title">BATTLE TOWERS ONLINE</h1>
+    <p class="home-sub">
+      Tower defense 1v1 thời gian thực. Dựng tháp trên slot cố định, quản lý kinh tế và chống đợt quân địch.
+    </p>
+
+    <div class="home-panel">
+      <label for="pilot-name">Tên hiển thị (tùy chọn)</label>
+      <input id="pilot-name" type="text" placeholder="PILOT_ID" maxlength="24" autocomplete="nickname" />
+
+      <a class="home-btn-primary" href="game.html?mode=ai" id="btn-ai">
+        Chiến đấu với AI
+      </a>
+      <p class="home-note" style="margin-top: -4px; margin-bottom: 16px">
+        Chơi một mình: một bản đồ, AI định kỳ gửi quân tấn công căn cứ của bạn. Phù hợp luyện tập và khám phá tháp.
+      </p>
+
+      <a class="home-btn-secondary" href="game.html?mode=pvp">
+        Luyện tập PvP (hai bàn)
+      </a>
+      <p class="home-note" style="margin-top: 8px; margin-bottom: 16px">
+        Hai khung màn hình: gửi quân sang bàn đối thủ, đồng thời chịu áp lực từ AI lên bàn của bạn.
+      </p>
+
+      <div class="home-row">
+        <span class="home-btn-secondary" style="opacity: 0.5; cursor: not-allowed" title="Sắp có">Ghép trận</span>
+        <span class="home-btn-secondary" style="opacity: 0.5; cursor: not-allowed" title="Sắp có">Tìm phòng</span>
+      </div>
+
+    <p class="home-note">
+      Bản mockup HTML gốc (Tailwind CDN) nằm trong repo tại <code>UI/trangchu/code.html</code>.
+      Khi chạy Docker, cùng nội dung có tại <a href="/ui/trangchu/code.html" style="color: var(--cyan)">/ui/trangchu</a>.
+    </p>
+    </div>
+  </main>
+
+  <footer class="home-footer">
+    <div class="home-tip">
+      <div>
+        <strong>Hướng dẫn nhanh</strong>
+        <p>Chọn tháp bên trái trong trận → click slot trống để xây → chuột phải để bán tháp.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script type="module" src="/src/home.ts"></script>
+</body>
+</html>

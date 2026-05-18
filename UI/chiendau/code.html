@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Battle Towers Online - Split-Screen PvP HUD</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&amp;family=Geist:wght@400;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-bright": "#31394d",
+                        "surface": "#0b1326",
+                        "on-primary-container": "#005763",
+                        "on-primary-fixed": "#001f25",
+                        "surface-variant": "#2d3449",
+                        "secondary-container": "#d97722",
+                        "on-surface": "#dae2fd",
+                        "background": "#0b1326",
+                        "on-error": "#690005",
+                        "on-secondary": "#4f2500",
+                        "on-primary": "#00363e",
+                        "surface-container-lowest": "#060e20",
+                        "on-tertiary-container": "#3842ab",
+                        "primary": "#8aebff",
+                        "on-primary-fixed-variant": "#004e5a",
+                        "error-container": "#93000a",
+                        "on-tertiary": "#131e8c",
+                        "tertiary": "#d8daff",
+                        "secondary": "#ffb783",
+                        "outline-variant": "#3c494c",
+                        "primary-fixed": "#a2eeff",
+                        "on-secondary-container": "#451f00",
+                        "outline": "#859397",
+                        "on-secondary-fixed": "#301400",
+                        "tertiary-fixed": "#e0e0ff",
+                        "primary-fixed-dim": "#2fd9f4",
+                        "on-surface-variant": "#bbc9cd",
+                        "on-background": "#dae2fd",
+                        "inverse-primary": "#006877",
+                        "surface-container-highest": "#2d3449",
+                        "surface-container-low": "#131b2e",
+                        "inverse-surface": "#dae2fd",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-high": "#222a3d",
+                        "tertiary-fixed-dim": "#bdc2ff",
+                        "on-tertiary-fixed-variant": "#2f3aa3",
+                        "primary-container": "#22d3ee",
+                        "surface-container": "#171f33",
+                        "secondary-fixed-dim": "#ffb783",
+                        "surface-dim": "#0b1326",
+                        "error": "#ffb4ab",
+                        "secondary-fixed": "#ffdcc5",
+                        "on-secondary-fixed-variant": "#713700",
+                        "inverse-on-surface": "#283044",
+                        "on-tertiary-fixed": "#000767",
+                        "tertiary-container": "#b6bcff",
+                        "surface-tint": "#2fd9f4"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "unit": "4px",
+                        "container-max": "1440px",
+                        "margin-desktop": "32px",
+                        "margin-mobile": "16px"
+                    },
+                    "fontFamily": {
+                        "stat-lg": ["JetBrains Mono"],
+                        "label-mono": ["JetBrains Mono"],
+                        "headline-lg-mobile": ["Geist"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Geist"],
+                        "display-lg": ["Geist"]
+                    },
+                    "fontSize": {
+                        "stat-lg": ["24px", { "lineHeight": "1", "fontWeight": "700" }],
+                        "label-mono": ["14px", { "lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .inner-glow-cyan {
+            box-shadow: inset 0 0 10px rgba(138, 235, 255, 0.2);
+            border: 1px solid rgba(138, 235, 255, 0.3);
+        }
+        .inner-glow-amber {
+            box-shadow: inset 0 0 10px rgba(255, 183, 131, 0.2);
+            border: 1px solid rgba(255, 183, 131, 0.3);
+        }
+        .bg-pattern {
+            background-image: radial-gradient(circle at center, rgba(45, 52, 73, 0.2) 0%, rgba(11, 19, 38, 0.9) 100%);
+        }
+        .flicker {
+            animation: flicker 4s infinite;
+        }
+        @keyframes flicker {
+            0%, 19.999%, 22%, 62.999%, 64%, 64.999%, 70%, 100% { opacity: 1; }
+            20%, 21.999%, 63%, 63.999%, 65%, 69.999% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface h-screen w-screen overflow-hidden flex flex-col font-body-md text-body-md select-none bg-pattern relative">
+<!-- Top Navigation Anchor (from JSON) -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-desktop h-16 bg-surface/70 dark:bg-surface/70 backdrop-blur-xl border-b border-outline-variant/30 inner-glow-cyan">
+<div class="flex items-center gap-4">
+<span class="font-label-mono text-label-mono uppercase tracking-widest text-primary dark:text-primary">NETH-STRIKE COMMAND</span>
+</div>
+<div class="flex items-center gap-6 text-on-surface-variant dark:text-on-surface-variant">
+<span class="material-symbols-outlined hover:bg-primary/10 dark:hover:bg-primary/10 hover:text-primary transition-all duration-300 cursor-pointer p-2 rounded-full active:scale-95 duration-100" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="material-symbols-outlined hover:bg-primary/10 dark:hover:bg-primary/10 hover:text-primary transition-all duration-300 cursor-pointer p-2 rounded-full active:scale-95 duration-100" data-icon="trending_up">trending_up</span>
+<span class="material-symbols-outlined hover:bg-primary/10 dark:hover:bg-primary/10 hover:text-primary transition-all duration-300 cursor-pointer p-2 rounded-full active:scale-95 duration-100" data-icon="favorite">favorite</span>
+</div>
+</header>
+<!-- Side Navigation — mockup; mục tháp bên dưới là div tĩnh (không tốn vàng). Game chạy thật: /game.html -->
+<nav class="flex fixed left-0 top-16 bottom-0 z-40 flex-col py-gutter docked left-0 h-full w-56 sm:w-64 bg-surface-variant/70 dark:bg-surface-variant/70 backdrop-blur-xl border-r border-outline-variant/30 shadow-xl inner-glow-cyan overflow-y-auto">
+<div class="px-3 mx-2 mb-3 py-2 rounded-lg bg-primary/15 border border-primary/30 text-center">
+<p class="text-[10px] text-primary/90 uppercase tracking-wider mb-1">Mockup — không tương tác game</p>
+<a class="block w-full text-center py-2 rounded bg-primary-container text-on-primary font-label-mono text-xs font-bold uppercase hover:brightness-110" href="/game.html?mode=ai">Bắt đầu chơi (bản Phaser)</a>
+<p class="text-[10px] text-on-surface-variant mt-1 px-1">Chạy <code class="text-primary">npm run dev</code> hoặc Docker cổng 8080</p>
+</div>
+<div class="px-6 mb-4 flex flex-col gap-2">
+<div class="text-xs text-primary/70 tracking-widest uppercase">Player Unit Commander</div>
+<h2 class="font-headline-lg text-headline-lg text-secondary">DEPLOYMENT</h2>
+<div class="text-xs text-secondary/70">PHASE 1 ACTIVE</div>
+</div>
+<div class="flex-1 overflow-y-auto px-4 flex flex-col gap-2">
+<!-- Active Tab -->
+<div class="flex items-center gap-4 bg-secondary-container dark:bg-secondary-container text-on-secondary-container rounded-lg p-3 translate-x-1 transition-transform cursor-pointer">
+<span class="material-symbols-outlined" data-weight="fill">settings_input_component</span>
+<span class="font-label-mono text-label-mono">Mortar</span>
+</div>
+<!-- Inactive Tabs -->
+<div class="flex items-center gap-4 text-on-surface-variant dark:text-on-surface-variant p-3 hover:border-r-4 hover:border-secondary hover:bg-secondary/10 transition-all cursor-pointer">
+<span class="material-symbols-outlined">precision_manufacturing</span>
+<span class="font-label-mono text-label-mono">Machine Gun</span>
+</div>
+<div class="flex items-center gap-4 text-on-surface-variant dark:text-on-surface-variant p-3 hover:border-r-4 hover:border-secondary hover:bg-secondary/10 transition-all cursor-pointer">
+<span class="material-symbols-outlined">flare</span>
+<span class="font-label-mono text-label-mono">Laser</span>
+</div>
+<div class="flex items-center gap-4 text-on-surface-variant dark:text-on-surface-variant p-3 hover:border-r-4 hover:border-secondary hover:bg-secondary/10 transition-all cursor-pointer">
+<span class="material-symbols-outlined">shield</span>
+<span class="font-label-mono text-label-mono">Barracks</span>
+</div>
+</div>
+<div class="px-4 mt-auto mb-4">
+<a href="/game.html?mode=ai" class="block w-full text-center bg-secondary text-on-secondary font-label-mono text-label-mono py-3 rounded uppercase tracking-wider hover:bg-secondary/80 transition-colors">READY / Vào game thật</a>
+</div>
+<!-- Footer Tabs (Enemy Sends) -->
+<div class="px-4 border-t border-outline-variant/30 pt-4 flex flex-col gap-2 pb-24">
+<div class="text-xs text-on-surface-variant/50 uppercase tracking-widest mb-2 px-2">Enemy Sends</div>
+<div class="flex items-center gap-4 text-on-surface-variant dark:text-on-surface-variant p-2 hover:bg-surface-bright transition-all cursor-pointer rounded">
+<span class="material-symbols-outlined text-sm">directions_run</span>
+<span class="font-label-mono text-label-mono text-xs">Scouts</span>
+</div>
+<div class="flex items-center gap-4 text-on-surface-variant dark:text-on-surface-variant p-2 hover:bg-surface-bright transition-all cursor-pointer rounded">
+<span class="material-symbols-outlined text-sm">local_shipping</span>
+<span class="font-label-mono text-label-mono text-xs">Tanks</span>
+</div>
+<div class="flex items-center gap-4 text-on-surface-variant dark:text-on-surface-variant p-2 hover:bg-surface-bright transition-all cursor-pointer rounded">
+<span class="material-symbols-outlined text-sm">flight</span>
+<span class="font-label-mono text-label-mono text-xs">Flying</span>
+</div>
+<div class="flex items-center gap-4 text-on-surface-variant dark:text-on-surface-variant p-2 hover:bg-surface-bright transition-all cursor-pointer rounded">
+<span class="material-symbols-outlined text-sm">medical_services</span>
+<span class="font-label-mono text-label-mono text-xs">Support</span>
+</div>
+</div>
+</nav>
+<!-- Main Canvas (Split Screen) -->
+<main class="flex-1 mt-16 ml-56 sm:ml-64 relative flex">
+<!-- Center Divider / Timer HUD -->
+<div class="absolute left-1/2 top-0 bottom-0 w-px bg-outline-variant/30 -translate-x-1/2 z-10 flex flex-col items-center">
+<div class="mt-8 bg-surface/90 backdrop-blur-md border border-outline-variant p-4 rounded-b-xl shadow-2xl flex flex-col items-center gap-2">
+<span class="font-label-mono text-label-mono text-secondary uppercase tracking-widest">Wave 5</span>
+<span class="font-stat-lg text-stat-lg text-on-surface flicker">0:45</span>
+</div>
+</div>
+<!-- Left Side: Player Board -->
+<div class="flex-1 relative border-r border-outline-variant/10 overflow-hidden bg-cover bg-center" data-alt="A dark, high-contrast, top-down view of a futuristic grid-based battlefield. The terrain is composed of metallic hexagonal tiles with glowing cyan circuitry lines. Shadows are deep, and the lighting highlights the metallic textures. The overall mood is intense and tactical, fitting a sci-fi strategy game." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB0qVuMOAkHfwEjh-Htvz6kcxSMuNMovG4XE-unqLZBUtFGEE9QN1pZVf0PBlZAcmLzTQ1tat9zpeBZhZ7fJaQQX052BbVz9I-_Veu8ne27eorF4Ym5kxceTNdorFxqYo1XtFqEJXiYCsZ_cLCcKgNsMhBnMMDSv5tHEdlaK2YVrEHyqxhIoqhyB6FdN0NzMRNrN8qLZiDj127ltzc3lOQqw_Et6wBkO7Y_DrMGsmCQ9Ak266WQ-KT-DL4W8MjnGdHqLS62-nrCtUH5');">
+<div class="absolute inset-0 bg-background/60 backdrop-blur-[2px]"></div>
+<!-- Player Top HUD -->
+<div class="absolute top-margin-desktop left-margin-desktop right-12 z-20 flex justify-between items-start">
+<div class="bg-surface/70 backdrop-blur-xl p-4 rounded-lg inner-glow-cyan min-w-[200px]">
+<div class="flex justify-between items-center mb-2">
+<span class="font-label-mono text-label-mono text-primary uppercase">Player HP</span>
+<span class="font-label-mono text-label-mono text-on-surface">20/20</span>
+</div>
+<div class="h-2 w-full bg-surface-bright rounded overflow-hidden">
+<div class="h-full bg-primary w-full"></div>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="bg-surface/70 backdrop-blur-xl p-4 rounded-lg inner-glow-cyan flex flex-col items-end">
+<span class="font-label-mono text-label-mono text-primary/70 uppercase text-xs">Gold</span>
+<span class="font-stat-lg text-stat-lg text-primary">1240</span>
+</div>
+<div class="bg-surface/70 backdrop-blur-xl p-4 rounded-lg inner-glow-cyan flex flex-col items-end">
+<span class="font-label-mono text-label-mono text-primary/70 uppercase text-xs">Income</span>
+<span class="font-stat-lg text-stat-lg text-on-surface">+150/10s</span>
+</div>
+</div>
+</div>
+<!-- Bottom UI: Abilities -->
+<div class="absolute bottom-margin-desktop left-1/2 -translate-x-1/2 z-20 flex gap-4">
+<div class="w-16 h-16 rounded-xl bg-surface/80 backdrop-blur-xl inner-glow-cyan flex items-center justify-center cursor-pointer hover:bg-primary/20 transition-all hover:scale-105 group relative">
+<span class="material-symbols-outlined text-primary text-3xl group-hover:drop-shadow-[0_0_8px_rgba(138,235,255,0.8)]">bolt</span>
+<span class="absolute -bottom-6 font-label-mono text-[10px] text-primary/70 uppercase">EMP</span>
+</div>
+<div class="w-16 h-16 rounded-xl bg-surface/80 backdrop-blur-xl inner-glow-cyan flex items-center justify-center cursor-pointer hover:bg-primary/20 transition-all hover:scale-105 group relative">
+<span class="material-symbols-outlined text-primary text-3xl group-hover:drop-shadow-[0_0_8px_rgba(138,235,255,0.8)]">security</span>
+<span class="absolute -bottom-6 font-label-mono text-[10px] text-primary/70 uppercase">Shield</span>
+</div>
+<div class="w-16 h-16 rounded-xl bg-surface/80 backdrop-blur-xl inner-glow-amber flex items-center justify-center cursor-pointer hover:bg-secondary/20 transition-all hover:scale-105 group relative opacity-50 grayscale hover:grayscale-0">
+<span class="material-symbols-outlined text-secondary text-3xl">warning</span>
+<span class="absolute -bottom-6 font-label-mono text-[10px] text-secondary/70 uppercase">Nuke</span>
+<div class="absolute inset-0 flex items-center justify-center font-label-mono text-xs text-on-surface bg-surface/50 rounded-xl">60s</div>
+</div>
+</div>
+</div>
+<!-- Right Side: Opponent Board (Dimmed) -->
+<div class="flex-1 relative bg-cover bg-center grayscale-[30%] opacity-80" data-alt="A mirrored view of a futuristic grid-based battlefield, slightly desaturated to indicate an opponent's territory. The terrain features glowing amber circuitry lines instead of cyan. The lighting is harsher, creating a slightly hostile and distant atmosphere within the pristine sci-fi setting." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDez8Z70Qui0zUacHd9aRR2VruHmaUDPU-9GE7gMVw5kDz8s7G_WFEKEFgw-apkX9x7UpJRX-eoF_b8blPsHcsm96VmPCTenUl9DekPl_DAUZ7B9UFa4Rx9jh-J6jpw8CNNPlvRS4aP08CYBHQuXS4TmZMaCQHWFDS_wBAqbvLLvyweS-A0oUAIf7lAuuZodvIAgWyfuLk_UTOdOlpd2HwGaWvHJmIGQ6DUfhIX-4Q8aaORbSPz2zxoZ127iBSncArMXmYOip1q1gJ9');">
+<div class="absolute inset-0 bg-background/70 backdrop-blur-[4px]"></div>
+<!-- Opponent Top HUD -->
+<div class="absolute top-margin-desktop right-margin-desktop left-12 z-20 flex justify-between items-start flex-row-reverse">
+<div class="bg-surface/70 backdrop-blur-xl p-4 rounded-lg inner-glow-amber min-w-[200px]">
+<div class="flex justify-between items-center mb-2">
+<span class="font-label-mono text-label-mono text-secondary uppercase">Enemy HP</span>
+<span class="font-label-mono text-label-mono text-on-surface">18/20</span>
+</div>
+<div class="h-2 w-full bg-surface-bright rounded overflow-hidden">
+<div class="h-full bg-secondary w-[90%]"></div>
+</div>
+</div>
+<div class="flex gap-4 flex-row-reverse">
+<div class="bg-surface/70 backdrop-blur-xl p-4 rounded-lg inner-glow-amber flex flex-col items-start">
+<span class="font-label-mono text-label-mono text-secondary/70 uppercase text-xs">Gold</span>
+<span class="font-stat-lg text-stat-lg text-secondary">850</span>
+</div>
+<div class="bg-surface/70 backdrop-blur-xl p-4 rounded-lg inner-glow-amber flex flex-col items-start">
+<span class="font-label-mono text-label-mono text-secondary/70 uppercase text-xs">Income</span>
+<span class="font-stat-lg text-stat-lg text-on-surface">+120/10s</span>
+</div>
+</div>
+</div>
+<!-- Technical Data Stream Overlay (Right Edge) -->
+<div class="absolute top-1/4 right-4 z-10 flex flex-col gap-1 font-label-mono text-[10px] text-secondary/30 text-right uppercase">
+<div>SYS.OP.8992.A</div>
+<div>TRK_ACT: TRUE</div>
+<div>V_SYNC: 99.8%</div>
+<div>LATENCY: 12MS</div>
+</div>
+</div>
+</main>
+</body></html>

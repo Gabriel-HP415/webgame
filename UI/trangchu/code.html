@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Battle Towers Online</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400&amp;family=Geist:wght@700;800&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed-dim": "#bdc2ff",
+                        "on-surface": "#dae2fd",
+                        "on-secondary": "#4f2500",
+                        "outline-variant": "#3c494c",
+                        "primary-container": "#22d3ee",
+                        "on-tertiary": "#131e8c",
+                        "on-primary-fixed-variant": "#004e5a",
+                        "on-tertiary-container": "#3842ab",
+                        "surface-container-low": "#131b2e",
+                        "on-primary-fixed": "#001f25",
+                        "surface-container-lowest": "#060e20",
+                        "secondary-container": "#d97722",
+                        "outline": "#859397",
+                        "on-primary-container": "#005763",
+                        "tertiary-container": "#b6bcff",
+                        "on-secondary-fixed": "#301400",
+                        "error": "#ffb4ab",
+                        "secondary-fixed-dim": "#ffb783",
+                        "tertiary": "#d8daff",
+                        "on-secondary-container": "#451f00",
+                        "surface-bright": "#31394d",
+                        "secondary": "#ffb783",
+                        "error-container": "#93000a",
+                        "inverse-on-surface": "#283044",
+                        "surface-container-high": "#222a3d",
+                        "primary-fixed": "#a2eeff",
+                        "on-tertiary-fixed-variant": "#2f3aa3",
+                        "inverse-primary": "#006877",
+                        "surface-container": "#171f33",
+                        "on-error-container": "#ffdad6",
+                        "on-background": "#dae2fd",
+                        "on-error": "#690005",
+                        "surface": "#0b1326",
+                        "on-surface-variant": "#bbc9cd",
+                        "primary-fixed-dim": "#2fd9f4",
+                        "background": "#0b1326",
+                        "on-primary": "#00363e",
+                        "inverse-surface": "#dae2fd",
+                        "surface-variant": "#2d3449",
+                        "primary": "#8aebff",
+                        "surface-dim": "#0b1326",
+                        "secondary-fixed": "#ffdcc5",
+                        "on-tertiary-fixed": "#000767",
+                        "surface-container-highest": "#2d3449",
+                        "tertiary-fixed": "#e0e0ff",
+                        "surface-tint": "#2fd9f4",
+                        "on-secondary-fixed-variant": "#713700"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "gutter": "16px",
+                        "unit": "4px",
+                        "margin-desktop": "32px",
+                        "container-max": "1440px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "display-lg": ["Geist"],
+                        "headline-lg-mobile": ["Geist"],
+                        "headline-lg": ["Geist"],
+                        "label-mono": ["JetBrains Mono"],
+                        "stat-lg": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "label-mono": ["14px", { "lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "stat-lg": ["24px", { "lineHeight": "1", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .inner-glow-cyan {
+            box-shadow: inset 0 0 0 1px rgba(34, 211, 238, 0.2);
+        }
+        .outer-bloom-cyan:hover {
+            box-shadow: inset 0 0 0 1px rgba(34, 211, 238, 0.4), 0 0 15px rgba(34, 211, 238, 0.2);
+        }
+        .glass-panel {
+            background-color: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col relative overflow-hidden font-body-md text-body-md">
+<!-- Background Image with Overlay -->
+<div class="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat" data-alt="A subtle sci-fi technical pattern resembling a futuristic grid or a blurred view of a high-tech battlefield. The color palette features deep blacks, dark slate, and subtle cyan glows. The image is out of focus, creating a sleek, moody backdrop suitable for a high-stakes esports menu screen. It conveys a clean sci-fi fantasy aesthetic with minimal texture and maximum luminosity." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC9ZgFi44AmOy0UkCKF5ZJUOrPbpKTlDlvlqJLMrZGVowZ-uzvGvNUuzBWYnXOYvDtCsG4segbfd8yKdLmVYb4xYcBqlSEDJMr8CeV7XARXNI_tloR6cXgPF-hl9rFeM6H0i_xAZe4SLpsSVrmx-OpzMy-gy6noMFQxowK4CUkkD1eAXy4mUeW6UQ8N07i8bxE7LWNrG5Yyzv5CxThiGA4aqx7_939N-qLZ7xxirPEsdbjKtBSgBeeB6rHm26QtoQWNqa6iv6-l7bHp');">
+<div class="absolute inset-0 bg-background/80 backdrop-blur-sm"></div>
+</div>
+<!-- Top Navigation (Shell structure) -->
+<nav class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-desktop h-16 bg-surface/70 backdrop-blur-xl border-b border-outline-variant/30 inner-glow-cyan">
+<div class="flex items-center gap-unit-2">
+<span class="font-label-mono text-label-mono uppercase tracking-widest text-primary">NETH-STRIKE COMMAND</span>
+</div>
+<div class="flex gap-unit-2">
+<button class="p-2 text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-all duration-300 rounded-DEFAULT">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-all duration-300 rounded-DEFAULT">
+<span class="material-symbols-outlined">trending_up</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-all duration-300 rounded-DEFAULT">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-grow z-10 flex flex-col items-center justify-center px-margin-desktop mt-16 mb-24">
+<!-- Logo Area -->
+<div class="mb-gutter-8 flex flex-col items-center gap-gutter-2">
+<img alt="Battle Towers Online Logo" class="w-32 h-32 rounded-lg inner-glow-cyan" src="https://lh3.googleusercontent.com/aida/ADBb0uimc_0osnzv1OZ9EOLPuVqzMu2aHREIVvbIWUjnBUsL1HK7dd9Nk8YOXE0VQFlhhP0zh_dmLVi_sX__n7G6AIbs-8c_VNVvyz63WK7BshAbBFc4054NCvIwCWJiaxTPMYc3iRK8sPWe3GyTKhQRpaJ-aytZlvjWGSdN5DqWrIVp3VLnCFpNtyhTqV37pWDOd02jP1vXcXmleVD-RMroqXLaRMOolLTovWvKSAYKYHqjCWJb-A6550n1Nk5M"/>
+<h1 class="font-display-lg text-display-lg text-primary text-center tracking-tight">BATTLE TOWERS ONLINE</h1>
+</div>
+<!-- Matchmaking Panel -->
+<div class="w-full max-w-md glass-panel p-margin-desktop rounded-xl inner-glow-cyan flex flex-col gap-gutter-4 items-center">
+<div class="w-full">
+<label class="block font-label-mono text-label-mono text-primary mb-unit-2 uppercase" for="pilot-name">Nhập tên</label>
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-DEFAULT px-4 py-3 font-label-mono text-label-mono text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary placeholder-on-surface-variant transition-colors" id="pilot-name" placeholder="PILOT_ID" type="text"/>
+</div>
+<button class="w-full py-4 px-6 bg-gradient-to-r from-primary to-primary-fixed-dim text-on-primary font-headline-lg-mobile text-headline-lg-mobile rounded-lg border border-primary/50 hover:brightness-110 active:scale-95 transition-all duration-200 outer-bloom-cyan uppercase flex items-center justify-center gap-2 mt-unit-4">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">rocket_launch</span>
+                Ghép trận
+            </button>
+<div class="flex gap-gutter-2 w-full mt-unit-2">
+<button class="flex-1 py-3 px-4 bg-transparent border border-outline-variant text-primary font-label-mono text-label-mono rounded-DEFAULT hover:border-primary hover:bg-primary/10 active:scale-95 transition-all duration-200 uppercase">
+                    Tìm phòng
+                </button>
+<button class="flex-1 py-3 px-4 bg-transparent border border-outline-variant text-primary font-label-mono text-label-mono rounded-DEFAULT hover:border-primary hover:bg-primary/10 active:scale-95 transition-all duration-200 uppercase">
+                    Tạo phòng
+                </button>
+</div>
+</div>
+</main>
+<!-- Bottom Guide Section -->
+<footer class="absolute bottom-0 w-full z-20 p-margin-desktop flex justify-center pb-8">
+<div class="glass-panel px-6 py-4 rounded-xl inner-glow-cyan flex items-center gap-gutter-4 cursor-pointer hover:bg-surface-variant/80 transition-colors">
+<span class="material-symbols-outlined text-secondary">help</span>
+<div>
+<h3 class="font-label-mono text-label-mono text-secondary uppercase">Hướng dẫn nhanh</h3>
+<p class="font-body-md text-sm text-on-surface-variant mt-1">Tìm hiểu cơ chế tháp phòng thủ</p>
+</div>
+</div>
+</footer>
+</body></html>

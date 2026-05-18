@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html class="dark" lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Battle Towers Online — Trận đấu</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Geist:wght@700&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/styles/hud.css" />
+</head>
+<body class="game-page">
+  <header class="hud-header">
+    <span class="hud-brand">BATTLE TOWERS ONLINE</span>
+    <span class="hud-phase" id="hud-mode-label">Đang tải…</span>
+    <a class="hud-link" href="index.html">← Trang chủ</a>
+  </header>
+
+  <aside class="hud-dock" id="tower-dock">
+    <h2>TRIỂN KHAI</h2>
+    <button type="button" class="dock-btn dock-btn--tower active" data-tower="mortar">
+      <span class="dock-label">Mortar</span><span class="dock-price" data-cost-for="mortar">· 120 vàng</span>
+    </button>
+    <button type="button" class="dock-btn dock-btn--tower" data-tower="machine_gun">
+      <span class="dock-label">Machine Gun</span><span class="dock-price" data-cost-for="machine_gun">· 100 vàng</span>
+    </button>
+    <button type="button" class="dock-btn dock-btn--tower" data-tower="laser">
+      <span class="dock-label">Laser</span><span class="dock-price" data-cost-for="laser">· 150 vàng</span>
+    </button>
+    <button type="button" class="dock-btn dock-btn--tower" data-tower="barracks">
+      <span class="dock-label">Barracks</span><span class="dock-price" data-cost-for="barracks">· 110 vàng</span>
+    </button>
+    <hr />
+    <div id="dock-sends" class="dock-sends">
+      <h3>GỬI QUÂN (PvP)</h3>
+      <button type="button" class="dock-btn send" data-unit="scout">
+        <span class="dock-label">Scout</span><span class="dock-price" data-cost-for="scout">· 80 vàng</span>
+      </button>
+      <button type="button" class="dock-btn send" data-unit="tanker">
+        <span class="dock-label">Tanker</span><span class="dock-price" data-cost-for="tanker">· 140 vàng</span>
+      </button>
+      <button type="button" class="dock-btn send" data-unit="flying">
+        <span class="dock-label">Flying</span><span class="dock-price" data-cost-for="flying">· 120 vàng</span>
+      </button>
+      <button type="button" class="dock-btn send" data-unit="support">
+        <span class="dock-label">Support</span><span class="dock-price" data-cost-for="support">· 100 vàng</span>
+      </button>
+    </div>
+    <p class="dock-hint" id="dock-hint">
+      Click slot trống để xây tháp · Chuột phải để bán
+    </p>
+  </aside>
+
+  <main class="battle-main" id="battle-main">
+    <div class="board-wrap player">
+      <div id="canvas-player" class="phaser-host"></div>
+      <div class="board-hud">
+        <div class="stat-panel cyan">
+          <span class="label" id="label-hp-player">Căn cứ (bạn)</span>
+          <span class="value" id="hp-player">20/20</span>
+          <div class="bar"><div class="fill" id="hp-bar-player"></div></div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-panel cyan compact">
+            <span class="label">Vàng (bạn)</span>
+            <span class="value mono" id="gold-player">400</span>
+          </div>
+          <div class="stat-panel cyan compact">
+            <span class="label">Thu nhập</span>
+            <span class="value mono" id="income-player">+12/10s</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="spine">
+      <span class="wave">ĐỢT <span id="wave-num">1</span></span>
+      <span class="timer mono" id="match-timer">0:00</span>
+    </div>
+
+    <div class="board-wrap opponent">
+      <div id="canvas-opponent" class="phaser-host"></div>
+      <div class="board-hud mirrored">
+        <div class="stat-panel amber">
+          <span class="label">Căn cứ đối thủ</span>
+          <span class="value" id="hp-opponent">20/20</span>
+          <div class="bar"><div class="fill amber" id="hp-bar-opponent"></div></div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-panel amber compact">
+            <span class="label">Vàng (địch)</span>
+            <span class="value mono" id="gold-opponent">400</span>
+          </div>
+          <div class="stat-panel amber compact">
+            <span class="label">Thu nhập</span>
+            <span class="value mono" id="income-opponent">+12/10s</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="match-intro" class="match-intro" role="dialog" aria-modal="true" aria-labelledby="match-intro-title">
+    <div class="match-intro-card">
+      <h2 id="match-intro-title">Cách chơi</h2>
+      <ol class="match-intro-steps">
+        <li>Chọn <strong>loại tháp</strong> ở cột trái (có dòng giá <strong>vàng</strong>).</li>
+        <li><strong>Click vào vòng tròn slot</strong> trên bản đồ để xây — vàng sẽ trừ ngay.</li>
+        <li><strong>Chuột phải</strong> lên tháp để bán (hoàn một phần vàng).</li>
+      </ol>
+      <button type="button" class="match-intro-btn" id="btn-start-match">Bắt đầu</button>
+      <p class="match-intro-skip">Lần sau không hiện lại (trình duyệt này).</p>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

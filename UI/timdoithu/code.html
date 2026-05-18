@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Matchmaking Lobby - BATTLE TOWERS ONLINE</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@700;800&amp;family=Inter:wght@400&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-bright": "#31394d",
+                        "surface": "#0b1326",
+                        "on-primary-container": "#005763",
+                        "on-primary-fixed": "#001f25",
+                        "surface-variant": "#2d3449",
+                        "secondary-container": "#d97722",
+                        "on-surface": "#dae2fd",
+                        "background": "#0b1326",
+                        "on-error": "#690005",
+                        "on-secondary": "#4f2500",
+                        "on-primary": "#00363e",
+                        "surface-container-lowest": "#060e20",
+                        "on-tertiary-container": "#3842ab",
+                        "primary": "#8aebff",
+                        "on-primary-fixed-variant": "#004e5a",
+                        "error-container": "#93000a",
+                        "on-tertiary": "#131e8c",
+                        "tertiary": "#d8daff",
+                        "secondary": "#ffb783",
+                        "outline-variant": "#3c494c",
+                        "primary-fixed": "#a2eeff",
+                        "on-secondary-container": "#451f00",
+                        "outline": "#859397",
+                        "on-secondary-fixed": "#301400",
+                        "tertiary-fixed": "#e0e0ff",
+                        "primary-fixed-dim": "#2fd9f4",
+                        "on-surface-variant": "#bbc9cd",
+                        "on-background": "#dae2fd",
+                        "inverse-primary": "#006877",
+                        "surface-container-highest": "#2d3449",
+                        "surface-container-low": "#131b2e",
+                        "inverse-surface": "#dae2fd",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-high": "#222a3d",
+                        "tertiary-fixed-dim": "#bdc2ff",
+                        "on-tertiary-fixed-variant": "#2f3aa3",
+                        "primary-container": "#22d3ee",
+                        "surface-container": "#171f33",
+                        "secondary-fixed-dim": "#ffb783",
+                        "surface-dim": "#0b1326",
+                        "error": "#ffb4ab",
+                        "secondary-fixed": "#ffdcc5",
+                        "on-secondary-fixed-variant": "#713700",
+                        "inverse-on-surface": "#283044",
+                        "on-tertiary-fixed": "#000767",
+                        "tertiary-container": "#b6bcff",
+                        "surface-tint": "#2fd9f4"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "unit": "4px",
+                        "container-max": "1440px",
+                        "margin-desktop": "32px",
+                        "margin-mobile": "16px"
+                    },
+                    "fontFamily": {
+                        "stat-lg": ["JetBrains Mono"],
+                        "label-mono": ["JetBrains Mono"],
+                        "headline-lg-mobile": ["Geist"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Geist"],
+                        "display-lg": ["Geist"]
+                    },
+                    "fontSize": {
+                        "stat-lg": ["24px", { "lineHeight": "1", "fontWeight": "700" }],
+                        "label-mono": ["14px", { "lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .inner-glow-cyan { box-shadow: inset 0 0 0 1px rgba(138, 235, 255, 0.2); }
+        .inner-glow-amber { box-shadow: inset 0 0 0 1px rgba(255, 183, 131, 0.2); }
+        .bloom-cyan { box-shadow: 0 0 15px rgba(138, 235, 255, 0.4); }
+        .scanlines {
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+            background-size: 100% 4px;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen relative overflow-hidden font-body-md text-body-md">
+<div class="absolute inset-0 scanlines pointer-events-none z-10"></div>
+<div class="absolute inset-0 bg-gradient-to-b from-surface-container-lowest to-surface opacity-90 -z-10"></div>
+<img alt="Cyberpunk city" class="absolute inset-0 w-full h-full object-cover -z-20 opacity-20 filter blur-[2px]" data-alt="A sprawling, high-tech cyberpunk cityscape viewed from a high vantage point at night. The scene is illuminated by neon blue and amber lights, casting long shadows across monolithic skyscrapers. The aesthetic is clean sci-fi fantasy, avoiding grime in favor of sleek, luminous surfaces and holographic projections. The mood is tense and anticipatory, fitting for a high-stakes esports combat arena." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgEGIRyTdIiryHuTgjzHM10MmDnMYXePCfAvEsLqBTS0xtO3ECyt6-uFKnMb6ZYA2CeNu4pZ4CutfdBPF2aD6pA64bkw7_AmXkP3VcBDaxSWcYt9lXdHIh-YU_k02ZDEs2QxTA4o6CeHLH-WsW5qRejDMnYTXAzpSwszoz2cFmZWATH3vS8WKIJsHapYcRWwAM-hGSoZ-9kF2B_BvpLrLe7LSXLt2OJJO3qwb-RUhzwk_zrysRfhvUa3cr7CI4ZGPKAqXDMPGCtK5D"/>
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-desktop h-16 bg-surface/70 dark:bg-surface/70 backdrop-blur-xl border-b border-outline-variant/30 inner-glow-cyan">
+<div class="flex items-center gap-gutter">
+<span class="font-label-mono text-label-mono uppercase tracking-widest text-primary dark:text-primary">NETH-STRIKE COMMAND</span>
+</div>
+<div class="flex items-center gap-6">
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-all duration-300 cursor-pointer">account_balance_wallet</span>
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-all duration-300 cursor-pointer">trending_up</span>
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-all duration-300 cursor-pointer">favorite</span>
+</div>
+</header>
+<main class="pt-[80px] pb-gutter px-margin-desktop h-screen flex flex-col z-20 relative container mx-auto max-w-container-max">
+<nav class="flex items-center gap-2 font-label-mono text-label-mono text-on-surface-variant mb-6">
+<span class="hover:text-primary cursor-pointer transition-colors">Home</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="hover:text-primary cursor-pointer transition-colors">Ranked</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-primary">Matchmaking</span>
+</nav>
+<div class="flex-1 grid grid-cols-12 gap-6 pb-[100px]">
+<div class="col-span-8 flex flex-col items-center justify-center relative">
+<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-surface-variant opacity-20 font-display-lg text-[150px] pointer-events-none select-none tracking-tighter">VS</div>
+<div class="flex items-center justify-center gap-12 w-full">
+<div class="flex flex-col items-center gap-4 z-10 w-[280px]">
+<div class="w-full aspect-[3/4] bg-surface-variant/70 backdrop-blur-xl rounded-lg inner-glow-cyan relative overflow-hidden flex flex-col bloom-cyan border border-primary/30">
+<img alt="Player 1 Avatar" class="w-full h-2/3 object-cover" data-alt="A portrait of a highly stylized, sci-fi cybernetic character facing right. The character wears sleek, dark combat armor with glowing cyan accents. The background is a clean, dark slate void. The aesthetic is high-end digital art, emphasizing crisp details, pristine surfaces, and a luminous, high-tech vibe typical of competitive esports hero shooters." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC9GaQ8V0EjlNWfwwsZFlEb9UYKqN7ZI5dCz5VcNlblFUf_c8SQLFkj4g7A6JvPlMh86xJ5nx0ciWF2T7mc0JEWX2Ap5JpNEcGEY5i1W5QS02K-YcHTGhMAWl9HowQK3cLvM3RFX_1MVHApcJ98Pa4HtSl5K53JHiJn9hXWTRTot1SsL-69srUBdZGQfOW46TLa9q4Y3ZDmmb9BqDb7ENOlt5wdidt2uygVpscInb5LGn0M5sumHmVgY-M4dhSqkkihTpfjYaFO08bu"/>
+<div class="absolute top-2 left-2 bg-surface/80 backdrop-blur-sm px-2 py-1 rounded font-label-mono text-label-mono text-primary inner-glow-cyan flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">signal_cellular_alt</span> 12ms
+                            </div>
+<div class="p-4 flex-1 flex flex-col justify-between bg-gradient-to-t from-surface-container-highest to-transparent">
+<div>
+<h3 class="font-headline-lg text-headline-lg text-on-surface uppercase tracking-tight">Player 1</h3>
+<p class="font-label-mono text-label-mono text-on-surface-variant">Lv. 42 Commander</p>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 bg-secondary-container rounded-sm flex items-center justify-center transform rotate-45 border border-secondary/50">
+<span class="transform -rotate-45 font-stat-lg text-[12px] text-on-secondary-container">III</span>
+</div>
+<span class="font-label-mono text-label-mono text-secondary">Gold III</span>
+</div>
+</div>
+</div>
+</div>
+<div class="flex flex-col items-center gap-4 z-10 w-[280px]">
+<div class="w-full aspect-[3/4] bg-surface-variant/70 backdrop-blur-xl rounded-lg inner-glow-amber relative overflow-hidden flex flex-col border border-secondary/20">
+<img alt="Opponent Avatar" class="w-full h-2/3 object-cover filter grayscale contrast-125" data-alt="A portrait of an intimidating, masked sci-fi character facing left. The mask is sleek and featureless save for a glowing amber optic sensor. They wear matte black combat gear. The background is a deep, dark abyss. The overall aesthetic is clean sci-fi fantasy, utilizing high-contrast lighting and pristine textures to convey danger and high-tech superiority." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFt7VZpsvWt1zoHt8ronUZxwjlxT56gIksbg8riSgMeDi0cQqSBZ6bnvJarBXyf0-Sxv6ZOFgyMNKnB0ArtnWwxfByVbzT0qNIoHfHS3zhyzEsBevzHBsTJJEMfnOpslX7PzXhT9OD_jtASA3SEGpBRrGuBPpDFw6kAj7ud7iA6_UG9a7AMrfgsvMXXOtTlOc8qO90SkikvvgnkNM3Z-VKrQiZvxD28KPLDHqeZrXc8Xe7PXltVsIh9lbwGfI8znnIhvgz_OjzoHYa"/>
+<div class="absolute top-2 right-2 bg-surface/80 backdrop-blur-sm px-2 py-1 rounded font-label-mono text-label-mono text-error inner-glow-amber flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">signal_cellular_alt</span> 45ms
+                            </div>
+<div class="p-4 flex-1 flex flex-col justify-between bg-gradient-to-t from-surface-container-highest to-transparent items-end text-right">
+<div>
+<h3 class="font-headline-lg text-headline-lg text-on-surface uppercase tracking-tight">ProGamer99</h3>
+<p class="font-label-mono text-label-mono text-on-surface-variant">Lv. 88 Tactician</p>
+</div>
+<div class="flex items-center gap-2 flex-row-reverse">
+<div class="w-6 h-6 bg-error-container rounded-sm flex items-center justify-center transform rotate-45 border border-error/50">
+<span class="transform -rotate-45 font-stat-lg text-[12px] text-on-error-container">V</span>
+</div>
+<span class="font-label-mono text-label-mono text-error">Diamond V</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="col-span-4 flex flex-col gap-6">
+<div class="bg-surface-variant/70 backdrop-blur-xl rounded-lg inner-glow-cyan p-4 flex flex-col gap-3">
+<h4 class="font-label-mono text-label-mono text-primary uppercase flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">map</span> Operational Zone
+                    </h4>
+<div class="relative w-full aspect-video rounded overflow-hidden border border-outline-variant/30 inner-glow-cyan">
+<img alt="Map Preview" class="w-full h-full object-cover opacity-80" data-alt="A top-down, tactical map view of a futuristic ruined city, designated as 'Neo-Tokyo Ruins'. The map is rendered in a holographic style with glowing cyan outlines against a dark navy background. Grid lines intersect the terrain, and strategic choke points are highlighted in subtle amber. The visual tone is highly precise, technical, and clean, devoid of organic mess." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDf50AyNXgnESpUFGJ3Okh_AA8gOh_kzqP8z8RyOkz6rK7dFblFoINGUPbCI4ssZiRZ6XKyzxskbEnnhu4sm7fQrWsT78cA3JtuZFdJL9XyJXKuWw2p4b593Yksp5vS_NZ3UIZfyKtNrhKobLJl09kpXd-by49b7ZbFPySHM7AxbEbQlHCN11ROehGT6PeakMk6c_De_jc_jOIOCKo4oDBMVgfDQSfsJs0JN-KfdJaEpV8yHaG-NLcgpT2y4Ood5bkymlnFSBYad5_9"/>
+<div class="absolute bottom-2 left-2 bg-surface/90 px-2 py-1 rounded font-label-mono text-label-mono text-on-surface">
+                            Neo-Tokyo Ruins
+                        </div>
+</div>
+</div>
+<div class="flex-1 bg-surface-variant/50 backdrop-blur-md rounded-lg inner-glow-cyan flex flex-col border border-outline-variant/20 overflow-hidden">
+<div class="p-3 border-b border-outline-variant/30 flex items-center justify-between bg-surface/50">
+<span class="font-label-mono text-label-mono text-on-surface-variant">LOBBY COMMS</span>
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">forum</span>
+</div>
+<div class="flex-1 p-3 overflow-y-auto font-label-mono text-label-mono text-[12px] flex flex-col gap-2">
+<div class="text-on-surface-variant"><span class="text-secondary">[SYSTEM]</span> Match established. Waiting for players...</div>
+<div class="text-on-surface"><span class="text-error">ProGamer99:</span> GL HF</div>
+<div class="text-on-surface"><span class="text-primary">Player 1:</span> u too</div>
+</div>
+<div class="p-2 border-t border-outline-variant/30 bg-surface/50 flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">keyboard</span>
+<input class="w-full bg-transparent border-none focus:ring-0 text-on-surface font-label-mono text-label-mono text-[12px] placeholder:text-on-surface-variant/50" placeholder="TRANSMIT MESSAGE..." type="text"/>
+</div>
+</div>
+</div>
+</div>
+<div class="absolute bottom-12 left-1/2 transform -translate-x-1/2 z-30">
+<button class="bg-gradient-to-r from-primary-container to-primary-fixed-dim text-on-primary-container font-headline-lg text-headline-lg px-12 py-4 rounded-xl border border-primary bloom-cyan hover:brightness-125 transition-all duration-300 flex items-center gap-3 active:scale-95 shadow-[0_0_30px_rgba(34,211,238,0.3)]">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">power_settings_new</span>
+                READY
+            </button>
+</div>
+</main>
+</body></html>

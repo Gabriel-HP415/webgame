@@ -1,0 +1,24 @@
+{
+  "name": "battle-towers-online",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Real-time competitive 1v1 browser PvP tower defense",
+  "workspaces": [
+    "packages/shared",
+    "packages/client",
+    "packages/server"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @bto/client",
+    "dev:server": "npm run dev -w @bto/server",
+    "build": "npm run build -w @bto/shared && npm run build -w @bto/client",
+    "build:server": "npm run build -w @bto/shared && npm run build -w @bto/server",
+    "typecheck": "npm run build -w @bto/shared",
+    "docker:up": "docker compose up --build -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
