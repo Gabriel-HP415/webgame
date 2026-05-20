@@ -53,7 +53,7 @@ function applyModeToDom(mode: GameMode) {
     dockSends?.classList.add('is-hidden');
     if (hint) {
       hint.textContent =
-        'Click slot trống xây tháp · Click tháp để nâng cấp (Lv3 chọn hiệu ứng) · Mortar nổ AOE · Boss mỗi 10 đợt · Chuột phải bán.';
+        'Click slot trống xây tháp · Click tháp để nâng cấp (Lv3 chọn hiệu ứng) · Mortar nổ AOE · Boss mỗi 5 đợt · Chuột phải bán.';
     }
     if (label) label.textContent = `CHẾ ĐỘ AI — ${mapLabel}`;
   } else if (mode === 'online') {

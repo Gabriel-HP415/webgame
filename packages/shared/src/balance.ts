@@ -44,8 +44,12 @@ export const TOWER_LEVEL_SCALE: Record<
 
 export const WAVE_DURATION_SEC = 45;
 
+export const BOSS_EVERY_WAVES = 5;
+
 export const BOSS_BASE_HP = 900;
 export const BOSS_HP_PER_WAVE = 220;
+/** Nhân thêm HP boss (tổng = computeBossHp × hệ số này) */
+export const BOSS_HP_MULTIPLIER = 3;
 export const BOSS_SPEED_MULT = 0.32;
 export const BOSS_BOUNTY = 120;
 
@@ -66,12 +70,17 @@ export function getEnemyHpMultiplier(wave: number, unitId?: UnitId): number {
   return mult;
 }
 
-/** Boss: HP tăng mạnh ở cuối game */
+/** Boss: HP tăng mạnh ở cuối game (× BOSS_HP_MULTIPLIER) */
 export function computeBossHp(wave: number): number {
   const w = Math.max(1, wave);
   const linear = BOSS_BASE_HP + w * BOSS_HP_PER_WAVE;
   const curve = 1 + Math.max(0, w - 2) * 0.2 + Math.max(0, w - 10) * 0.15 + Math.max(0, w - 18) * 0.1;
-  return Math.floor(linear * curve);
+  return Math.floor(linear * curve * BOSS_HP_MULTIPLIER);
+}
+
+export function isBossWave(wave: number): boolean {
+  const w = Math.max(1, wave);
+  return w % BOSS_EVERY_WAVES === 0;
 }
 
 /** Sát thương mọi tháp (đợt 1 = 100%, giảm dần, sàn ~42%) */
@@ -291,13 +300,13 @@ export function getWaveSpawnPlan(wave: number): {
   waveAdvanceBonus: number;
 } {
   const w = Math.max(1, wave);
-  const isBossWave = w % 10 === 0;
+  const bossWave = isBossWave(w);
   /** Mỗi lần bắn đợt: tối thiểu 20 con, tăng dần theo đợt UI */
-  const gruntCount = isBossWave
+  const gruntCount = bossWave
     ? 22 + Math.floor(w / 6)
     : Math.min(WAVE_GRUNT_MAX, WAVE_GRUNT_BASE + Math.floor((w - 1) * 1.35));
   const spawnIntervalMs = Math.max(WAVE_SPAWN_INTERVAL_MIN_MS, 420 - w * 22);
   const bossHp = computeBossHp(w);
   const waveAdvanceBonus = Math.min(20, 8 + Math.floor(w * 0.9));
-  return { isBossWave, gruntCount, spawnIntervalMs, bossHp, waveAdvanceBonus };
+  return { isBossWave: bossWave, gruntCount, spawnIntervalMs, bossHp, waveAdvanceBonus };
 }
