@@ -14,23 +14,14 @@ GitHub Pages **chỉ** host file HTML/JS. Tạo phòng cần server Node (`packa
 
 ### Bước A — Deploy server lên Render (miễn phí)
 
-1. [render.com](https://render.com) → **New** → **Web Service** → chọn repo GitHub
-2. **Build Command:**
-   ```bash
-   npm install && npm run build -w @bto/shared && npm run build -w @bto/server
-   ```
-3. **Start Command:**
-   ```bash
-   npm run start -w @bto/server
-   ```
-4. **Environment variables:**
-   - `CORS_ORIGIN` = URL GitHub Pages của bạn, ví dụ:  
-     `https://gabriel-hp415.github.io`  
-     (có thể thêm nhiều domain, cách nhau bằng dấu phẩy)
-5. Deploy xong → copy URL, ví dụ `https://bto-server.onrender.com`
-6. Mở `https://YOUR-SERVICE.onrender.com/health` → phải thấy `{"ok":true,...}`
+Xem **[render-deploy.txt](./render-deploy.txt)**.
 
-Hoặc dùng file `render.yaml` ở root repo (Blueprint).
+**Root Directory** = `packages/server`:
+
+- **Build:** `cd ../.. && npm install && npm run build -w @bto/shared && npm run build -w @bto/server`
+- **Start:** `npm start`
+- **CORS_ORIGIN:** `https://<user>.github.io`
+- **Health:** `/health`
 
 ### Bước B — Gắn URL vào game (không cần build lại)
 

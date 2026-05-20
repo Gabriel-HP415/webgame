@@ -1,0 +1,16 @@
+# Blueprint khi Root Directory trên Render = packages/server
+# Hoặc: New → Blueprint → chọn repo, trỏ file này.
+services:
+  - type: web
+    name: bto-game-server
+    runtime: node
+    rootDir: packages/server
+    plan: free
+    buildCommand: cd ../.. && npm install && npm run build -w @bto/shared && npm run build -w @bto/server
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: CORS_ORIGIN
+        sync: false

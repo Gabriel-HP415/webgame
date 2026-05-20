@@ -4,7 +4,9 @@ import {
   BRANCH_INFO,
   getMatchWave,
   getWaveSpawnPlan,
+  isLargeMap,
   MAP_CATALOG,
+  rollBossSpawnCount,
   resolveMapId,
   TOWERS,
   UNITS,
@@ -53,7 +55,7 @@ function applyModeToDom(mode: GameMode) {
     dockSends?.classList.add('is-hidden');
     if (hint) {
       hint.textContent =
-        'Click slot trống xây tháp · Click tháp để nâng cấp (Lv3 chọn hiệu ứng) · Mortar nổ AOE · Boss mỗi 5 đợt · Chuột phải bán.';
+        'Click slot trống xây tháp · Click tháp nâng cấp · Map lớn: 3–5 Boss / 5 đợt · Chuột phải bán.';
     }
     if (label) label.textContent = `CHẾ ĐỘ AI — ${mapLabel}`;
   } else if (mode === 'online') {
@@ -85,7 +87,7 @@ function applyModeToDom(mode: GameMode) {
 }
 
 function applyWideMapEconomy(state: BoardState) {
-  if (map.slots.length >= 18) {
+  if (isLargeMap(map.slots.length)) {
     state.gold = 520;
     state.income = 14;
   }
@@ -544,7 +546,21 @@ async function initGame() {
       const plan = getWaveSpawnPlan(wave);
       if (!plan.isBossWave || bossSpawnedForWave === wave) return;
       bossSpawnedForWave = wave;
-      playerScene?.spawnBoss(randomLane(), plan.bossHp);
+
+      const bossCount = rollBossSpawnCount(map.slots.length);
+      const usedLanes = new Set<number>();
+      const laneCount = map.lanes.length;
+
+      for (let i = 0; i < bossCount; i++) {
+        let lane = Math.floor(Math.random() * laneCount);
+        let tries = 0;
+        while (usedLanes.has(lane) && tries < 16) {
+          lane = Math.floor(Math.random() * laneCount);
+          tries++;
+        }
+        usedLanes.add(lane);
+        playerScene?.spawnBoss(lane, plan.bossHp);
+      }
     };
 
     const runHostileBurst = () => {

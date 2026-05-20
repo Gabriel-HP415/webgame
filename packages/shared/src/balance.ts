@@ -16,16 +16,23 @@ export type TowerBranchId = 'fire' | 'ice' | 'poison' | 'electric';
 export const MAX_TOWER_LEVEL = 3;
 export const ALL_BRANCHES: TowerBranchId[] = ['fire', 'ice', 'poison', 'electric'];
 
+/** Hiệu ứng nhánh Lv3 — tối đa ~10% (chỉnh tại đây) */
+export const BRANCH_FIRE_DAMAGE_BONUS = 0.1;
+export const BRANCH_ICE_SLOW_PERCENT = 0.1;
+export const BRANCH_ICE_SLOW_DURATION_SEC = 2.5;
+export const BRANCH_ELECTRIC_CHAIN_DAMAGE_RATIO = 0.1;
+export const BRANCH_ELECTRIC_CHAIN_TARGETS = 2;
+
 export const BRANCH_INFO: Record<
   TowerBranchId,
   { name: string; summary: string; color: string }
 > = {
-  fire: { name: 'Lửa', summary: '+35% sát thương mỗi viên', color: '#f97316' },
-  ice: { name: 'Băng', summary: 'Làm chậm 50% trong 2.5s', color: '#67e8f9' },
+  fire: { name: 'Lửa', summary: '+10% sát thương mỗi viên', color: '#f97316' },
+  ice: { name: 'Băng', summary: 'Làm chậm 10% trong 2.5s', color: '#67e8f9' },
   poison: { name: 'Độc', summary: 'Rút máu 4 HP/giây trong 4s', color: '#a3e635' },
   electric: {
     name: 'Điện',
-    summary: 'Lan sang 2 mục tiêu gần (65% sát thương)',
+    summary: 'Lan 2 mục tiêu gần (10% sát thương)',
     color: '#fde047',
   },
 };
@@ -81,6 +88,22 @@ export function computeBossHp(wave: number): number {
 export function isBossWave(wave: number): boolean {
   const w = Math.max(1, wave);
   return w % BOSS_EVERY_WAVES === 0;
+}
+
+/** Map lớn (nhiều slot) — đồng bộ với economy rộng trong main.ts */
+export const LARGE_MAP_MIN_SLOTS = 18;
+export const LARGE_MAP_BOSS_COUNT_MIN = 3;
+export const LARGE_MAP_BOSS_COUNT_MAX = 5;
+
+export function isLargeMap(slotCount: number): boolean {
+  return slotCount >= LARGE_MAP_MIN_SLOTS;
+}
+
+/** Map nhỏ: 1 boss; map lớn: 3–5 boss mỗi đợt boss */
+export function rollBossSpawnCount(slotCount: number): number {
+  if (!isLargeMap(slotCount)) return 1;
+  const span = LARGE_MAP_BOSS_COUNT_MAX - LARGE_MAP_BOSS_COUNT_MIN + 1;
+  return LARGE_MAP_BOSS_COUNT_MIN + Math.floor(Math.random() * span);
 }
 
 /** Sát thương mọi tháp (đợt 1 = 100%, giảm dần, sàn ~42%) */

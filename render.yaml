@@ -1,5 +1,5 @@
-# Deploy game server (Socket.io) — free tier Render
-# Dashboard: New → Blueprint → connect repo, or Web Service with this config.
+# Deploy game server (Socket.io) — monorepo root
+# Nếu Root Directory = packages/server → dùng packages/server/render.yaml
 services:
   - type: web
     name: bto-game-server
@@ -13,5 +13,3 @@ services:
         value: "20"
       - key: CORS_ORIGIN
         sync: false
-      - key: PORT
-        value: "3001"

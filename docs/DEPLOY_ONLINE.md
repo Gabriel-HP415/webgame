@@ -12,20 +12,26 @@
 
 ## 1. Deploy server (Render)
 
-1. Đẩy repo lên GitHub.
-2. [Render](https://render.com) → **New Web Service** → chọn repo.
-3. **Root Directory**: để trống (root monorepo).
-4. **Build Command**:  
-   `npm install && npm run build -w @bto/shared && npm run build -w @bto/server`
-5. **Start Command**:  
-   `npm run start -w @bto/server`
-6. **Environment**:
-   - `CORS_ORIGIN` = URL Vercel của bạn, ví dụ:  
-     `https://your-game.vercel.app`  
-     (nhiều origin: cách nhau bằng dấu phẩy)
-7. Sau khi deploy, mở `https://YOUR-SERVICE.onrender.com/health` → phải thấy `{"ok":true,...}`.
+Chi tiết từng bước: **[render-deploy.txt](./render-deploy.txt)**
 
-Hoặc dùng file `render.yaml` ở root (Blueprint).
+### Cách nhanh (Root Directory = `packages/server`)
+
+| Mục | Giá trị |
+|-----|---------|
+| Build Command | `cd ../.. && npm install && npm run build -w @bto/shared && npm run build -w @bto/server` |
+| Start Command | `npm start` |
+| Health Check | `/health` |
+| `CORS_ORIGIN` | `https://<user>.github.io` (và localhost nếu test) |
+
+> Chỉ `npm install` trong `packages/server` **không đủ** — server cần package `@bto/shared` đã build.
+
+### Monorepo root (để trống Root Directory)
+
+- Build: `npm install && npm run build -w @bto/shared && npm run build -w @bto/server`
+- Start: `npm run start -w @bto/server`
+- Hoặc Blueprint: `render.yaml` ở root hoặc `packages/server/render.yaml`
+
+Kiểm tra: `https://YOUR-SERVICE.onrender.com/health` → `{"ok":true,"service":"bto-server"}`
 
 ## 2. Deploy client (Vercel)
 

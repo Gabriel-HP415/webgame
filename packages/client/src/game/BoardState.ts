@@ -1,6 +1,11 @@
 import {
   BASE_HP,
   BOSS_SPEED_MULT,
+  BRANCH_ELECTRIC_CHAIN_DAMAGE_RATIO,
+  BRANCH_ELECTRIC_CHAIN_TARGETS,
+  BRANCH_FIRE_DAMAGE_BONUS,
+  BRANCH_ICE_SLOW_DURATION_SEC,
+  BRANCH_ICE_SLOW_PERCENT,
   DAMAGE_MATRIX,
   getBossBounty,
   getBountyMultiplier,
@@ -118,7 +123,7 @@ export function getTowerDamageMult(tower: TowerInstance): number {
   const scale = TOWER_LEVEL_SCALE[tower.towerId];
   let mult = 1 + (tower.level - 1) * scale.damagePerLevel;
   if (tower.level >= MAX_TOWER_LEVEL && tower.branch === 'fire') {
-    mult *= 1.35;
+    mult *= 1 + BRANCH_FIRE_DAMAGE_BONUS;
   }
   return mult;
 }
@@ -256,7 +261,7 @@ export function spawnBoss(state: BoardState, lane: number, bossHp: number): void
 function enemySpeedMult(e: EnemyInstance, state: BoardState): number {
   let mult = e.isBoss ? BOSS_SPEED_MULT : 1;
   if (state.matchTime < e.debuff.slowUntil) {
-    mult *= 0.5;
+    mult *= 1 - BRANCH_ICE_SLOW_PERCENT;
   }
   return mult;
 }
@@ -383,7 +388,10 @@ function applyBranchOnHit(
   if (!branch) return [];
 
   if (branch === 'ice') {
-    enemy.debuff.slowUntil = Math.max(enemy.debuff.slowUntil, now + 2.5);
+    enemy.debuff.slowUntil = Math.max(
+      enemy.debuff.slowUntil,
+      now + BRANCH_ICE_SLOW_DURATION_SEC,
+    );
     return [];
   }
   if (branch === 'poison') {
@@ -399,7 +407,7 @@ function applyBranchOnHit(
     .map((e) => ({ e, pos: getEnemyPos(state, e), d: Math.hypot(getEnemyPos(state, e).x - pos.x, getEnemyPos(state, e).y - pos.y) }))
     .sort((a, b) => a.d - b.d);
 
-  for (let i = 0; i < Math.min(2, candidates.length); i++) {
+  for (let i = 0; i < Math.min(BRANCH_ELECTRIC_CHAIN_TARGETS, candidates.length); i++) {
     if (candidates[i].d <= 90) chain.push(candidates[i].e.id);
   }
   return chain;
@@ -524,7 +532,7 @@ export function tickCombat(state: BoardState, dt: number): CombatShot[] {
         for (const cid of chainIds) {
           const ce = state.enemies.find((x) => x.id === cid);
           if (!ce || ce.hp <= 0) continue;
-          const chainRaw = baseRaw * 0.65;
+          const chainRaw = baseRaw * BRANCH_ELECTRIC_CHAIN_DAMAGE_RATIO;
           const cdmg = Math.max(
             1,
             Math.floor(mitigatedDamage(chainRaw, def.damageType, UNITS[ce.unitId].armor)),

@@ -1,0 +1,87 @@
+# Deploy packages/server lên Render (Battle Towers Online)
+
+Game server dùng Socket.io. Client (GitHub Pages / Vercel) kết nối qua URL Render.
+
+---
+
+## Cách A — Root Directory = packages/server (theo Render UI)
+
+Render chỉ theo dõi thay đổi trong thư mục này. Vì server phụ thuộc @bto/shared,
+Build Command phải build shared từ root monorepo trước.
+
+| Mục | Giá trị |
+|-----|---------|
+| Root Directory | packages/server |
+| Runtime | Node 20 |
+| Build Command | cd ../.. && npm install && npm run build -w @bto/shared && npm run build -w @bto/server |
+| Start Command | npm start |
+| Health Check Path | /health |
+
+Environment Variables (Render Dashboard → Environment):
+
+  CORS_ORIGIN = https://<user>.github.io
+  (nhiều domain, cách nhau dấu phẩy — thêm origin GitHub Pages + localhost nếu test)
+
+  Ví dụ:
+  CORS_ORIGIN=https://gabriel-hp415.github.io,http://127.0.0.1:8080
+
+  PORT — Render tự inject, không cần set tay.
+
+Không cần DATABASE_URL / JWT_SECRET (server hiện không dùng DB).
+
+Sau deploy — kiểm tra:
+  https://<ten-service>.onrender.com/health
+  → {"ok":true,"service":"bto-server"}
+
+Client — dán URL vào trang chủ game (ô URL máy chủ) hoặc GitHub Secret VITE_SOCKET_URL.
+
+---
+
+## Cách B — Root Directory = (để trống, root repo) — khuyến nghị monorepo
+
+| Mục | Giá trị |
+|-----|---------|
+| Root Directory | (trống) |
+| Build Command | npm install && npm run build -w @bto/shared && npm run build -w @bto/server |
+| Start Command | npm run start -w @bto/server |
+| Health Check Path | /health |
+
+Hoặc import repo với file render.yaml ở root repository.
+
+---
+
+## package.json server (đã có sẵn)
+
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  }
+
+Code lắng nghe PORT (Render):
+
+  const PORT = Number(process.env.PORT) || 3001;
+  httpServer.listen(PORT, '0.0.0.0', ...);
+
+---
+
+## Khắc phục lỗi
+
+503 / Build failed
+  - Sai Build Command (thiếu build @bto/shared).
+  - Xem Logs → Build: Cannot find module '@bto/shared' → dùng lệnh cd ../.. && ... ở Cách A.
+
+Không kết nối Socket từ GitHub Pages
+  - CORS_ORIGIN phải khớp domain trang client (https://user.github.io).
+  - Client phải Lưu URL Render (https://xxx.onrender.com, không / ở cuối).
+  - Free tier ngủ ~30s — bấm Kiểm tra kết nối / Tạo phòng lại.
+
+Chỉ chơi AI / không cần server
+  - Không cần deploy Render.
+
+---
+
+## Ghi chú
+
+- Auto-deploy: với Root Directory = packages/server, chỉ push thay đổi trong packages/server
+  hoặc packages/shared (nếu Render theo dõi cả repo) mới trigger build.
+- shared chỉ export types + balance tại runtime server không load maps JSON (resolveMapId local).

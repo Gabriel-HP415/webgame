@@ -6,7 +6,11 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
-    "build": "tsc"
+    "build": "tsc",
+    "build:render": "cd ../.. && npm install && npm run build -w @bto/shared && npm run build -w @bto/server"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "dependencies": {
     "@bto/shared": "*",
