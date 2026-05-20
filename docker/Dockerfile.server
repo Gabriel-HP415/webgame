@@ -31,6 +31,8 @@ COPY packages/client/package.json ./packages/client/
 RUN npm ci --omit=dev
 
 COPY --from=build /app/packages/shared/dist ./packages/shared/dist
+# maps.js import JSON runtime — dist alone is not enough
+COPY --from=build /app/packages/shared/maps ./packages/shared/maps
 COPY --from=build /app/packages/server/dist ./packages/server/dist
 
 WORKDIR /app/packages/server

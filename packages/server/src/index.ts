@@ -7,7 +7,14 @@ import express from 'express';
 import { createServer } from 'node:http';
 import { Server } from 'socket.io';
 import type { EnemySendPayload, GameEvent, MatchStartPayload } from '@bto/shared';
-import { resolveMapId } from '@bto/shared';
+
+const VALID_MAP_IDS = new Set(['neon_grid', 'neon_crossroads']);
+
+function resolveMapId(id: string | null | undefined): string {
+  const key = id?.trim();
+  if (key && VALID_MAP_IDS.has(key)) return key;
+  return 'neon_crossroads';
+}
 
 const corsOrigin = process.env.CORS_ORIGIN ?? '*';
 const corsOptions =
