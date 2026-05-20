@@ -6,7 +6,7 @@ services:
     runtime: node
     rootDir: packages/server
     plan: free
-    buildCommand: cd ../.. && npm install && npm run build -w @bto/shared && npm run build -w @bto/server
+    buildCommand: npm install && npm run build
     startCommand: npm start
     healthCheckPath: /health
     envVars:

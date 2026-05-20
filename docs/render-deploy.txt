@@ -6,14 +6,13 @@ Game server dùng Socket.io. Client (GitHub Pages / Vercel) kết nối qua URL 
 
 ## Cách A — Root Directory = packages/server (theo Render UI)
 
-Render chỉ theo dõi thay đổi trong thư mục này. Vì server phụ thuộc @bto/shared,
-Build Command phải build shared từ root monorepo trước.
+Server không còn phụ thuộc build @bto/shared (types nằm trong src/types.ts).
 
 | Mục | Giá trị |
 |-----|---------|
 | Root Directory | packages/server |
 | Runtime | Node 20 |
-| Build Command | cd ../.. && npm install && npm run build -w @bto/shared && npm run build -w @bto/server |
+| Build Command | npm install && npm run build |
 | Start Command | npm start |
 | Health Check Path | /health |
 

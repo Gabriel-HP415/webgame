@@ -6,7 +6,7 @@ import cors from 'cors';
 import express from 'express';
 import { createServer } from 'node:http';
 import { Server } from 'socket.io';
-import type { EnemySendPayload, GameEvent, MatchStartPayload } from '@bto/shared';
+import type { EnemySendPayload, GameEvent, MatchStartPayload } from './types.js';
 
 const VALID_MAP_IDS = new Set(['neon_grid', 'neon_crossroads']);
 
