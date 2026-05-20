@@ -102,6 +102,99 @@ body.game-page.match-intro-open #match-intro {
   text-align: center;
 }
 
+/* Game over */
+body.game-over-active {
+  pointer-events: none;
+}
+
+body.game-over-active #game-over.is-visible {
+  pointer-events: auto;
+}
+
+.game-over {
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(11, 19, 38, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.game-over.is-visible {
+  display: flex;
+  animation: game-over-fade-in 0.45s ease-out;
+}
+
+@keyframes game-over-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.game-over-card {
+  max-width: 360px;
+  width: 100%;
+  padding: 28px 32px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 100, 100, 0.4);
+  background: rgba(23, 31, 51, 0.96);
+  box-shadow: 0 0 32px rgba(239, 68, 68, 0.15);
+  text-align: center;
+  animation: game-over-card-pop 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+}
+
+@keyframes game-over-card-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.game-over-title {
+  font-family: Geist, system-ui, sans-serif;
+  font-size: 28px;
+  letter-spacing: 0.12em;
+  color: #f87171;
+  margin-bottom: 12px;
+}
+
+.game-over-text {
+  font-size: 14px;
+  opacity: 0.75;
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.game-over-btn {
+  display: inline-block;
+  width: 100%;
+  padding: 14px;
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  color: #00363e;
+  background: linear-gradient(90deg, #22d3ee, #2fd9f4);
+}
+
+.game-over-btn:hover {
+  filter: brightness(1.06);
+}
+
 .hud-header {
   position: fixed;
   top: 0; left: 0; right: 0;
@@ -180,6 +273,11 @@ body.game-page.match-intro-open #match-intro {
   font-size: 12px;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+  pointer-events: auto;
+}
+
+.dock-btn * {
+  pointer-events: none;
 }
 
 .dock-btn.dock-btn--tower,
@@ -210,6 +308,14 @@ body.game-page.match-intro-open #match-intro {
   opacity: 0.45;
 }
 
+.dock-btn.cannot-afford:not(.active) {
+  opacity: 0.55;
+}
+
+.dock-btn.cannot-afford.active {
+  opacity: 0.85;
+}
+
 .dock-btn:hover { background: rgba(138, 235, 255, 0.08); }
 .dock-btn.active {
   background: #d97722;
@@ -233,6 +339,8 @@ body.game-page.match-intro-open #match-intro {
   right: 0;
   bottom: 0;
   display: flex;
+  align-items: stretch;
+  overflow: hidden;
 }
 
 .battle-main--solo .board-wrap.opponent {
@@ -258,9 +366,12 @@ body.game-page.match-intro-open #match-intro {
 }
 
 .board-wrap {
-  flex: 1;
+  flex: 1 1 50%;
   position: relative;
   min-width: 0;
+  min-height: 0;
+  height: 100%;
+  align-self: stretch;
 }
 
 .board-wrap.opponent {
@@ -268,15 +379,35 @@ body.game-page.match-intro-open #match-intro {
 }
 
 .phaser-host {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   touch-action: manipulation;
+  z-index: 0;
 }
 
 .phaser-host canvas {
   display: block;
   width: 100% !important;
   height: 100% !important;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.battle-main[data-loading] .phaser-host::after {
+  content: 'Đang tải bản đồ…';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--cyan);
+  opacity: 0.7;
+  pointer-events: none;
+  z-index: 5;
 }
 
 .spine {

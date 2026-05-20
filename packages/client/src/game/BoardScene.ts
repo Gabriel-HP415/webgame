@@ -39,6 +39,8 @@ export class BoardScene extends Phaser.Scene {
   towerSprites = new Map<string, Phaser.GameObjects.Container>();
   enemySprites = new Map<number, Phaser.GameObjects.Arc>();
   onHudUpdate?: (s: BoardState) => void;
+  onGameOver?: () => void;
+  private gameOverNotified = false;
 
   constructor(key: string) {
     super(key);
@@ -54,26 +56,41 @@ export class BoardScene extends Phaser.Scene {
 
     this.pathGraphics = this.add.graphics();
     this.slotGraphics = this.add.graphics();
-    this.layoutBattlefield();
+    this.pathGraphics.setDepth(1);
+    this.slotGraphics.setDepth(2);
 
     this.scale.on(Phaser.Scale.Events.RESIZE, this.layoutBattlefield, this);
+    this.layoutBattlefield();
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.scale.off(Phaser.Scale.Events.RESIZE, this.layoutBattlefield, this);
     });
 
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      if (this.config.readOnly) return;
+      if (this.config.readOnly || this.state.gameOver) return;
       if (p.rightButtonDown()) {
         this.trySellAt(p.worldX, p.worldY);
         return;
       }
       this.tryBuildAt(p.worldX, p.worldY);
     });
+
+    const canvas = this.game.canvas;
+    if (canvas) {
+      canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    }
   }
 
-    /** Vẽ lại lưới / path / slot khi scale thay đổi; cập nhật vị trí tháp */
+  /** Vẽ lại map (FIT scale — kích thước game cố định theo map JSON) */
+  relayout() {
+    this.scale.refresh();
+    this.layoutBattlefield();
+  }
+
+  /** Vẽ lại lưới / path / slot khi scale thay đổi; cập nhật vị trí tháp */
   private layoutBattlefield = () => {
-    const { width, height } = this.scale;
+    const width = this.scale.width || this.config.map.width;
+    const height = this.scale.height || this.config.map.height;
+    if (width < 8 || height < 8) return;
     this.drawGrid(width, height);
     this.gridGraphics?.setDepth(-10);
     this.drawPaths();
@@ -101,18 +118,30 @@ export class BoardScene extends Phaser.Scene {
 
   /** Hostile wave (AI): no gold cost, no income change */
   spawnHostile(unitId: UnitId, lane: number) {
+    if (this.state.gameOver) return;
     spawnEnemy(this.state, unitId, lane);
     this.emitHud();
   }
 
   /** Phaser gửi `delta` theo ms; logic bàn cờ dùng giây */
   update(_t: number, deltaMs: number) {
+    if (this.state.gameOver) {
+      this.maybeNotifyGameOver();
+      return;
+    }
     const dt = deltaMs / 1000;
     tickEconomy(this.state, dt);
     tickEnemies(this.state, dt);
     tickCombat(this.state, dt);
     this.syncEnemies();
     this.emitHud();
+    this.maybeNotifyGameOver();
+  }
+
+  private maybeNotifyGameOver() {
+    if (!this.state.isPlayer || !this.state.gameOver || this.gameOverNotified) return;
+    this.gameOverNotified = true;
+    this.onGameOver?.();
   }
 
   emitHud() {
@@ -187,7 +216,7 @@ export class BoardScene extends Phaser.Scene {
     this.gridGraphics?.destroy();
     const g = this.add.graphics();
     this.gridGraphics = g;
-    g.lineStyle(1, 0x2d3449, 0.5);
+    g.lineStyle(1, 0x4a5a80, 0.85);
     for (let x = 0; x < w; x += 32) {
       g.lineBetween(x, 0, x, h);
     }
@@ -211,7 +240,7 @@ export class BoardScene extends Phaser.Scene {
     const { sx, sy } = this.getScale();
     const color = this.config.accent;
     for (const lane of this.config.map.lanes) {
-      g.lineStyle(3, color, 0.35);
+      g.lineStyle(4, color, 0.75);
       const wp = lane.waypoints;
       for (let i = 0; i < wp.length - 1; i++) {
         g.lineBetween(wp[i].x * sx, wp[i].y * sy, wp[i + 1].x * sx, wp[i + 1].y * sy);
@@ -223,28 +252,38 @@ export class BoardScene extends Phaser.Scene {
     const g = this.slotGraphics;
     g.clear();
     const { sx, sy } = this.getScale();
+    const selectedColor = TOWER_COLORS[this.selectedTower];
     for (const s of this.config.map.slots) {
       const occupied = this.state.towers.has(s.id);
       const x = s.x * sx;
       const y = s.y * sy;
-      g.lineStyle(2, occupied ? 0x4ade80 : this.config.accent, occupied ? 0.9 : 0.5);
+      const isSel = !occupied;
+      g.lineStyle(2, occupied ? 0x4ade80 : isSel ? selectedColor : this.config.accent, occupied ? 0.9 : 0.65);
       g.strokeCircle(x, y, 18);
       if (!occupied) {
-        g.fillStyle(this.config.accent, 0.08);
+        g.fillStyle(isSel ? selectedColor : this.config.accent, isSel ? 0.15 : 0.08);
         g.fillCircle(x, y, 16);
       }
     }
   }
 
   private baseMarker?: Phaser.GameObjects.Arc;
+  private spawnMarker?: Phaser.GameObjects.Arc;
 
   private drawBase() {
     this.baseMarker?.destroy();
+    this.spawnMarker?.destroy();
     const { sx, sy } = this.getScale();
     const b = this.config.map.basePosition;
+    const sp = this.config.map.spawnPosition;
     const c = this.add.circle(b.x * sx, b.y * sy, 22, this.config.accent, 0.25);
     c.setStrokeStyle(2, this.config.accent, 0.9);
+    c.setDepth(3);
     this.baseMarker = c;
+    const spawn = this.add.circle(sp.x * sx, sp.y * sy, 10, 0xff6b6b, 0.5);
+    spawn.setStrokeStyle(2, 0xff6b6b, 0.9);
+    spawn.setDepth(3);
+    this.spawnMarker = spawn;
   }
 
   private addTowerVisual(slotId: string) {
@@ -286,6 +325,7 @@ export class BoardScene extends Phaser.Scene {
         const color = e.flying ? 0xd8daff : 0xffb783;
         sprite = this.add.circle(x, y, e.flying ? 8 : 10, color, 0.95);
         sprite.setStrokeStyle(1, 0xffffff, 0.5);
+        sprite.setDepth(20);
         this.enemySprites.set(e.id, sprite);
       } else {
         sprite.setPosition(x, y);
