@@ -89,20 +89,26 @@ export function getTowerDamageMultiplier(wave: number): number {
   return Math.max(0.42, 1 - (w - 1) * 0.032 - Math.max(0, w - 12) * 0.012);
 }
 
-/** Thu nhập /10s (giảm theo đợt, sàn ~48%) */
+/** Thu nhập /10s (giảm theo đợt, sàn ~40%) */
 export function getIncomeMultiplier(wave: number): number {
   const w = Math.max(1, wave);
-  return Math.max(0.48, 1 - (w - 1) * 0.026 - Math.max(0, w - 15) * 0.01);
+  return Math.max(0.4, 1 - (w - 1) * 0.03 - Math.max(0, w - 12) * 0.012);
 }
 
-/** Vàng khi giết quái (giảm theo đợt, sàn ~38%) */
+/**
+ * Vàng khi giết quái — giảm mạnh vì mật độ đợt cao (~20 con/đợt).
+ * Đợt 1 ~35% bounty gốc, cuối game ~10–12%.
+ */
+export const BOUNTY_DENSITY_MULT = 0.38;
+
 export function getBountyMultiplier(wave: number): number {
   const w = Math.max(1, wave);
-  return Math.max(0.38, 1 - (w - 1) * 0.03 - Math.max(0, w - 10) * 0.015);
+  const byWave = Math.max(0.28, 1 - (w - 1) * 0.04 - Math.max(0, w - 6) * 0.022);
+  return byWave * BOUNTY_DENSITY_MULT;
 }
 
 export function getBossBounty(wave: number): number {
-  return Math.max(8, Math.floor(BOSS_BOUNTY * getBountyMultiplier(wave)));
+  return Math.max(6, Math.floor(BOSS_BOUNTY * getBountyMultiplier(wave) * 1.15));
 }
 export const MORTAR_BOMB_RADIUS = 72;
 export const MORTAR_AOE_EDGE_MULT = 0.35;
