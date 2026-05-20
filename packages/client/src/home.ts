@@ -46,8 +46,13 @@ function selectedMap(): string {
   return mapSelect?.value ?? 'neon_crossroads';
 }
 
+function appBase(): string {
+  const b = import.meta.env.BASE_URL || '/';
+  return b.endsWith('/') ? b : `${b}/`;
+}
+
 function buildGameHref(mode: 'ai' | 'pvp' | 'online', roomId?: string): string {
-  const u = new URL('game.html', window.location.origin);
+  const u = new URL(`${appBase()}game.html`, window.location.origin);
   u.searchParams.set('mode', mode);
   u.searchParams.set('map', selectedMap());
   const name = pilotName();
@@ -81,10 +86,14 @@ function showRoomCreated(roomId: string) {
 
 if (serverHint) {
   const url = getSocketServerUrl();
-  serverHint.textContent =
-    url === window.location.origin
-      ? 'Dev: chạy npm run dev:server. Production: đặt VITE_SOCKET_URL trỏ máy chủ Render.'
-      : `Server: ${url}`;
+  if (!url) {
+    serverHint.textContent =
+      'GitHub Pages: chỉ chơi AI. Online cần secret VITE_SOCKET_URL (Render) trong repo Settings.';
+  } else if (url === window.location.origin) {
+    serverHint.textContent = 'Dev/Docker: chạy npm run dev:server. Online qua cùng cổng 8080.';
+  } else {
+    serverHint.textContent = `Server online: ${url}`;
+  }
 }
 
 syncGameLinks();

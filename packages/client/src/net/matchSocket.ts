@@ -16,10 +16,14 @@ export interface MatchSocketHandlers {
   onConnect?: () => void;
 }
 
-/** URL server Socket.io — build Vercel set `VITE_SOCKET_URL` (Render/Railway). Dev: cùng origin + proxy. */
+/** URL server Socket.io — CI: secret VITE_SOCKET_URL. Dev/Docker: cùng origin + proxy. */
 export function getSocketServerUrl(): string {
   const env = import.meta.env.VITE_SOCKET_URL as string | undefined;
   if (env && env.trim()) return env.trim().replace(/\/$/, '');
+  // GitHub Pages chỉ host static — không có Socket trên cùng origin
+  if (import.meta.env.PROD && import.meta.env.BASE_URL !== '/') {
+    return '';
+  }
   return window.location.origin;
 }
 

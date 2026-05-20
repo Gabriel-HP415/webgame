@@ -1,7 +1,11 @@
 import { defineConfig } from 'vite';
 import path from 'node:path';
 
+/** GitHub Pages: VITE_BASE_PATH=/webgame/ — local/Docker: không set (/) */
+const base = process.env.VITE_BASE_PATH || '/';
+
 export default defineConfig({
+  base,
   root: '.',
   publicDir: 'public',
   resolve: {

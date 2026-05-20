@@ -61,6 +61,12 @@ docs/             # GDD & architecture
 UI/               # HTML/CSS mockups
 ```
 
+## GitHub Pages
+
+1. **Settings → Pages → Source: GitHub Actions**
+2. Push `main` — workflow `deploy-pages.yml` build Vite và deploy.
+3. URL: `https://<user>.github.io/<repo>/` — chơi **AI** ngay; **Online** cần secret `VITE_SOCKET_URL` (xem [docs/GITHUB_PAGES.md](docs/GITHUB_PAGES.md)).
+
 ## Chơi Online (Vercel + bạn bè)
 
 - Trang chủ → **Tạo phòng** / **Tham gia** (mã 6 ký tự).
