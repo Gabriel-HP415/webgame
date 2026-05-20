@@ -1,7 +1,6 @@
 import {
   getSavedSocketUrl,
   getSocketServerUrl,
-  isSocketConfigured,
   matchSocket,
   setSavedSocketUrl,
   socketConfigHint,
@@ -49,8 +48,25 @@ if (mapSelect) {
   });
 }
 
+/** URL trong ô hoặc đã Lưu — tránh báo lỗi khi chưa kịp bấm Lưu */
+function getEffectiveSocketUrl(): string {
+  const typed = socketUrlInput?.value.trim().replace(/\/$/, '') ?? '';
+  if (typed) return typed;
+  return getSocketServerUrl();
+}
+
+function persistSocketUrlFromForm(): void {
+  const url = socketUrlInput?.value.trim();
+  if (url) {
+    setSavedSocketUrl(url);
+    refreshServerHint();
+  }
+}
+
 if (socketUrlInput) {
-  socketUrlInput.value = getSavedSocketUrl();
+  const saved = getSavedSocketUrl();
+  socketUrlInput.value = saved || 'https://webgame-qpsy.onrender.com';
+  socketUrlInput.addEventListener('change', persistSocketUrlFromForm);
 }
 
 function refreshServerHint() {
@@ -104,6 +120,12 @@ function showRoomCreated(roomId: string) {
 }
 
 function waitForSocketConnect(): Promise<void> {
+  if (!getEffectiveSocketUrl()) {
+    return Promise.reject(
+      new Error('Chưa có URL server. Dán https://webgame-qpsy.onrender.com → Lưu URL → Kiểm tra kết nối.'),
+    );
+  }
+
   return new Promise((resolve, reject) => {
     let settled = false;
     const finish = (err?: Error) => {
@@ -140,11 +162,15 @@ if (btnSaveServer && socketUrlInput) {
 
 if (btnTestServer && socketUrlInput) {
   btnTestServer.addEventListener('click', async () => {
-    setSavedSocketUrl(socketUrlInput.value);
-    refreshServerHint();
+    persistSocketUrlFromForm();
+    const url = getEffectiveSocketUrl();
+    if (!url) {
+      setOnlineStatus('Nhập URL server (vd: https://webgame-qpsy.onrender.com)', true);
+      return;
+    }
     setOnlineStatus('Đang kiểm tra /health…');
     btnTestServer.disabled = true;
-    const result = await testSocketServerHealth(getSocketServerUrl() || socketUrlInput.value);
+    const result = await testSocketServerHealth(url);
     setOnlineStatus(result.message, !result.ok);
     btnTestServer.disabled = false;
   });
@@ -166,14 +192,11 @@ if (btnPvp) {
 
 if (btnCreateRoom) {
   btnCreateRoom.addEventListener('click', async () => {
-    if (socketUrlInput?.value.trim()) {
-      setSavedSocketUrl(socketUrlInput.value);
-      refreshServerHint();
-    }
+    persistSocketUrlFromForm();
 
-    if (!isSocketConfigured()) {
+    if (!getEffectiveSocketUrl()) {
       setOnlineStatus(
-        'Chưa có URL máy chủ. Deploy server lên Render (miễn phí), dán URL vào ô trên → Lưu → Kiểm tra kết nối.',
+        'Dán URL Render: https://webgame-qpsy.onrender.com → Lưu URL → Kiểm tra kết nối → Tạo phòng.',
         true,
       );
       return;
@@ -197,15 +220,15 @@ if (btnCreateRoom) {
 
 if (btnJoinRoom && roomCodeInput) {
   btnJoinRoom.addEventListener('click', () => {
-    if (socketUrlInput?.value.trim()) setSavedSocketUrl(socketUrlInput.value);
+    persistSocketUrlFromForm();
 
     const code = roomCodeInput.value.trim().toUpperCase();
     if (code.length < 4) {
       setOnlineStatus('Nhập mã phòng (6 ký tự).', true);
       return;
     }
-    if (!isSocketConfigured()) {
-      setOnlineStatus('Lưu URL server Render trước khi tham gia phòng.', true);
+    if (!getEffectiveSocketUrl()) {
+      setOnlineStatus('Dán https://webgame-qpsy.onrender.com → Lưu URL trước khi tham gia.', true);
       return;
     }
     window.location.href = buildGameHref('online', code);
