@@ -1,4 +1,12 @@
-import { matchSocket, getSocketServerUrl } from './net/matchSocket.js';
+import {
+  getSavedSocketUrl,
+  getSocketServerUrl,
+  isSocketConfigured,
+  matchSocket,
+  setSavedSocketUrl,
+  socketConfigHint,
+  testSocketServerHealth,
+} from './net/matchSocket.js';
 
 const KEY = 'bto_pilot_name';
 const MAP_KEY = 'bto_map_id';
@@ -8,6 +16,9 @@ const mapSelect = document.getElementById('map-select') as HTMLSelectElement | n
 const btnAi = document.getElementById('btn-ai') as HTMLAnchorElement | null;
 const btnPvp = document.getElementById('btn-pvp') as HTMLAnchorElement | null;
 
+const socketUrlInput = document.getElementById('socket-server-url') as HTMLInputElement | null;
+const btnSaveServer = document.getElementById('btn-save-server') as HTMLButtonElement | null;
+const btnTestServer = document.getElementById('btn-test-server') as HTMLButtonElement | null;
 const btnCreateRoom = document.getElementById('btn-create-room') as HTMLButtonElement | null;
 const btnJoinRoom = document.getElementById('btn-join-room') as HTMLButtonElement | null;
 const roomCodeInput = document.getElementById('room-code') as HTMLInputElement | null;
@@ -36,6 +47,14 @@ if (mapSelect) {
     localStorage.setItem(MAP_KEY, mapSelect.value);
     syncGameLinks();
   });
+}
+
+if (socketUrlInput) {
+  socketUrlInput.value = getSavedSocketUrl();
+}
+
+function refreshServerHint() {
+  if (serverHint) serverHint.textContent = socketConfigHint();
 }
 
 function pilotName(): string {
@@ -84,19 +103,52 @@ function showRoomCreated(roomId: string) {
   setOnlineStatus('Phòng đã tạo — gửi mã hoặc link cho bạn bè, rồi bấm «Vào trận».');
 }
 
-if (serverHint) {
-  const url = getSocketServerUrl();
-  if (!url) {
-    serverHint.textContent =
-      'GitHub Pages: chỉ chơi AI. Online cần secret VITE_SOCKET_URL (Render) trong repo Settings.';
-  } else if (url === window.location.origin) {
-    serverHint.textContent = 'Dev/Docker: chạy npm run dev:server. Online qua cùng cổng 8080.';
-  } else {
-    serverHint.textContent = `Server online: ${url}`;
-  }
+function waitForSocketConnect(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (err?: Error) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timer);
+      if (err) reject(err);
+      else resolve();
+    };
+
+    const timer = window.setTimeout(
+      () => finish(new Error('Hết thời gian chờ Socket. Render free có thể ngủ ~30s — thử «Kiểm tra kết nối» lại.')),
+      25_000,
+    );
+
+    matchSocket.connect({
+      onConnect: () => finish(),
+      onError: (msg) => finish(new Error(msg)),
+    });
+  });
 }
 
+refreshServerHint();
 syncGameLinks();
+
+if (btnSaveServer && socketUrlInput) {
+  btnSaveServer.addEventListener('click', () => {
+    setSavedSocketUrl(socketUrlInput.value);
+    matchSocket.disconnect();
+    refreshServerHint();
+    setOnlineStatus('Đã lưu URL server trên trình duyệt này.', false);
+  });
+}
+
+if (btnTestServer && socketUrlInput) {
+  btnTestServer.addEventListener('click', async () => {
+    setSavedSocketUrl(socketUrlInput.value);
+    refreshServerHint();
+    setOnlineStatus('Đang kiểm tra /health…');
+    btnTestServer.disabled = true;
+    const result = await testSocketServerHealth(getSocketServerUrl() || socketUrlInput.value);
+    setOnlineStatus(result.message, !result.ok);
+    btnTestServer.disabled = false;
+  });
+}
 
 if (btnAi) {
   btnAi.addEventListener('click', (e) => {
@@ -114,22 +166,24 @@ if (btnPvp) {
 
 if (btnCreateRoom) {
   btnCreateRoom.addEventListener('click', async () => {
+    if (socketUrlInput?.value.trim()) {
+      setSavedSocketUrl(socketUrlInput.value);
+      refreshServerHint();
+    }
+
+    if (!isSocketConfigured()) {
+      setOnlineStatus(
+        'Chưa có URL máy chủ. Deploy server lên Render (miễn phí), dán URL vào ô trên → Lưu → Kiểm tra kết nối.',
+        true,
+      );
+      return;
+    }
+
     btnCreateRoom.disabled = true;
-    setOnlineStatus('Đang kết nối máy chủ…');
+    setOnlineStatus('Đang kết nối Socket… (lần đầu Render có thể chậm)');
     try {
-      await new Promise<void>((resolve, reject) => {
-        const t = window.setTimeout(() => reject(new Error('Không kết nối được máy chủ game')), 12_000);
-        matchSocket.connect({
-          onConnect: () => {
-            window.clearTimeout(t);
-            resolve();
-          },
-          onError: (msg) => {
-            window.clearTimeout(t);
-            reject(new Error(msg));
-          },
-        });
-      });
+      matchSocket.disconnect();
+      await waitForSocketConnect();
       const info = await matchSocket.createRoom(pilotName(), selectedMap());
       showRoomCreated(info.roomId);
     } catch (err) {
@@ -143,9 +197,15 @@ if (btnCreateRoom) {
 
 if (btnJoinRoom && roomCodeInput) {
   btnJoinRoom.addEventListener('click', () => {
+    if (socketUrlInput?.value.trim()) setSavedSocketUrl(socketUrlInput.value);
+
     const code = roomCodeInput.value.trim().toUpperCase();
     if (code.length < 4) {
       setOnlineStatus('Nhập mã phòng (6 ký tự).', true);
+      return;
+    }
+    if (!isSocketConfigured()) {
+      setOnlineStatus('Lưu URL server Render trước khi tham gia phòng.', true);
       return;
     }
     window.location.href = buildGameHref('online', code);

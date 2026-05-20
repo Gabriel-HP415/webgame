@@ -42,10 +42,59 @@ export const TOWER_LEVEL_SCALE: Record<
   barracks: { damagePerLevel: 0, fireRatePerLevel: 0 },
 };
 
+export const WAVE_DURATION_SEC = 45;
+
 export const BOSS_BASE_HP = 900;
-export const BOSS_HP_PER_WAVE = 150;
+export const BOSS_HP_PER_WAVE = 220;
 export const BOSS_SPEED_MULT = 0.32;
 export const BOSS_BOUNTY = 120;
+
+/** Đợt UI (mỗi ~45s) — dùng chung client + server */
+export function getMatchWave(matchTimeSec: number): number {
+  return Math.floor(Math.max(0, matchTimeSec) / WAVE_DURATION_SEC) + 1;
+}
+
+/** HP quái spawn: càng cuối càng trâu (đợt 1 = 100%) */
+export function getEnemyHpMultiplier(wave: number, unitId?: UnitId): number {
+  const w = Math.max(1, wave);
+  let mult = 1 + (w - 1) * 0.14 + Math.max(0, w - 8) * 0.1;
+  if (unitId === 'tanker') {
+    mult *= 1 + (w - 1) * 0.06 + Math.max(0, w - 6) * 0.05;
+  } else if (unitId === 'flying') {
+    mult *= 1 + (w - 1) * 0.08;
+  }
+  return mult;
+}
+
+/** Boss: HP tăng mạnh ở cuối game */
+export function computeBossHp(wave: number): number {
+  const w = Math.max(1, wave);
+  const linear = BOSS_BASE_HP + w * BOSS_HP_PER_WAVE;
+  const curve = 1 + Math.max(0, w - 2) * 0.2 + Math.max(0, w - 10) * 0.15 + Math.max(0, w - 18) * 0.1;
+  return Math.floor(linear * curve);
+}
+
+/** Sát thương mọi tháp (đợt 1 = 100%, giảm dần, sàn ~42%) */
+export function getTowerDamageMultiplier(wave: number): number {
+  const w = Math.max(1, wave);
+  return Math.max(0.42, 1 - (w - 1) * 0.032 - Math.max(0, w - 12) * 0.012);
+}
+
+/** Thu nhập /10s (giảm theo đợt, sàn ~48%) */
+export function getIncomeMultiplier(wave: number): number {
+  const w = Math.max(1, wave);
+  return Math.max(0.48, 1 - (w - 1) * 0.026 - Math.max(0, w - 15) * 0.01);
+}
+
+/** Vàng khi giết quái (giảm theo đợt, sàn ~38%) */
+export function getBountyMultiplier(wave: number): number {
+  const w = Math.max(1, wave);
+  return Math.max(0.38, 1 - (w - 1) * 0.03 - Math.max(0, w - 10) * 0.015);
+}
+
+export function getBossBounty(wave: number): number {
+  return Math.max(8, Math.floor(BOSS_BOUNTY * getBountyMultiplier(wave)));
+}
 export const MORTAR_BOMB_RADIUS = 72;
 export const MORTAR_AOE_EDGE_MULT = 0.35;
 
@@ -227,20 +276,28 @@ export function towerUpgradeCost(tower: { towerId: TowerId; level: number }): nu
   return null;
 }
 
+/** Mật độ quái theo đợt — chỉnh ở đây */
+export const WAVE_GRUNT_BASE = 20;
+export const WAVE_GRUNT_MAX = 56;
+export const WAVE_SPAWN_INTERVAL_MIN_MS = 45;
+
 /** Mật độ quái theo đợt (đợt = wave UI, mỗi ~45s) */
 export function getWaveSpawnPlan(wave: number): {
   isBossWave: boolean;
   gruntCount: number;
   spawnIntervalMs: number;
   bossHp: number;
+  /** Quái thêm khi số đợt UI tăng (mỗi ~45s) */
+  waveAdvanceBonus: number;
 } {
   const w = Math.max(1, wave);
   const isBossWave = w % 10 === 0;
-  /** Boss wave vẫn có vài đợt quân nhỏ; đợt thường dày hơn */
+  /** Mỗi lần bắn đợt: tối thiểu 20 con, tăng dần theo đợt UI */
   const gruntCount = isBossWave
-    ? 5 + Math.floor(w / 10)
-    : Math.min(24, 4 + Math.floor(w * 1.15));
-  const spawnIntervalMs = Math.max(160, 820 - w * 58);
-  const bossHp = BOSS_BASE_HP + w * BOSS_HP_PER_WAVE;
-  return { isBossWave, gruntCount, spawnIntervalMs, bossHp };
+    ? 22 + Math.floor(w / 6)
+    : Math.min(WAVE_GRUNT_MAX, WAVE_GRUNT_BASE + Math.floor((w - 1) * 1.35));
+  const spawnIntervalMs = Math.max(WAVE_SPAWN_INTERVAL_MIN_MS, 420 - w * 22);
+  const bossHp = computeBossHp(w);
+  const waveAdvanceBonus = Math.min(20, 8 + Math.floor(w * 0.9));
+  return { isBossWave, gruntCount, spawnIntervalMs, bossHp, waveAdvanceBonus };
 }

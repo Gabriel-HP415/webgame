@@ -282,6 +282,29 @@ body {
   letter-spacing: 0.2em;
 }
 
+.home-input-url {
+  width: 100%;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(133, 147, 151, 0.35);
+  background: rgba(11, 19, 38, 0.6);
+  color: var(--on-surface);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+
+.home-row--server .home-btn-secondary {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.home-note--compact {
+  margin-top: 8px;
+  margin-bottom: 12px;
+  font-size: 11px;
+}
+
 .home-input-code {
   flex: 1;
   min-width: 0;

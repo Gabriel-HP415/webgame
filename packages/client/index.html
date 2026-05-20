@@ -53,6 +53,24 @@
       <h2 class="home-section-title">Chơi Online với bạn bè</h2>
       <p class="home-note" id="server-hint">Đang tải cấu hình server…</p>
 
+      <label for="socket-server-url">URL máy chủ game (Render / Docker)</label>
+      <input
+        id="socket-server-url"
+        type="url"
+        class="home-input-url"
+        placeholder="https://bto-server.onrender.com"
+        autocomplete="off"
+      />
+      <div class="home-row home-row--server">
+        <button type="button" class="home-btn-secondary" id="btn-save-server">Lưu URL</button>
+        <button type="button" class="home-btn-secondary" id="btn-test-server">Kiểm tra kết nối</button>
+      </div>
+      <p class="home-note home-note--compact">
+        GitHub Pages <strong>không</strong> chạy server — bạn phải deploy <code>packages/server</code> lên
+        <a href="https://render.com" class="home-link" target="_blank" rel="noopener">Render</a> (miễn phí), rồi dán URL ở trên.
+        Docker local: để trống, dùng <code>localhost:8080</code>.
+      </p>
+
       <button type="button" class="home-btn-primary" id="btn-create-room">Tạo phòng (Host)</button>
       <div id="online-room-box" class="online-room-box" hidden>
         <p class="home-note">Mã phòng: <strong id="online-room-code" class="mono"></strong></p>
@@ -66,9 +84,8 @@
         <button type="button" class="home-btn-secondary" id="btn-join-room">Tham gia</button>
       </div>
       <p class="online-status" id="online-status"></p>
-      <p class="home-note">
-        <strong>Vercel</strong> chỉ host trang web. Cần thêm máy chủ <strong>Render</strong> (miễn phí) cho Socket — hướng dẫn trong
-        <code>docs/DEPLOY_ONLINE.md</code>.
+      <p class="home-note home-note--compact">
+        Hướng dẫn chi tiết: <code>docs/GITHUB_PAGES.md</code> và <code>docs/DEPLOY_ONLINE.md</code>.
       </p>
 
     <p class="home-note">

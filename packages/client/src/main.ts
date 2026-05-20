@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { MapDefinition, TowerId, UnitId } from '@bto/shared';
 import {
   BRANCH_INFO,
+  getMatchWave,
   getWaveSpawnPlan,
   MAP_CATALOG,
   resolveMapId,
@@ -11,7 +12,7 @@ import {
 } from '@bto/shared';
 import { BoardScene, type BoardSceneConfig, type BoardSide } from './game/BoardScene.js';
 import type { BoardState } from './game/BoardState.js';
-import { matchSocket } from './net/matchSocket.js';
+import { isSocketConfigured, matchSocket } from './net/matchSocket.js';
 
 const mapId = resolveMapId(new URLSearchParams(window.location.search).get('map'));
 const mapEntry = MAP_CATALOG[mapId] ?? MAP_CATALOG.neon_crossroads;
@@ -380,7 +381,7 @@ function setupDockControls() {
 let matchSeconds = 0;
 
 function getCurrentWave(): number {
-  return Math.floor(matchSeconds / 45) + 1;
+  return getMatchWave(matchSeconds);
 }
 
 function startMatchTimer(onWaveChange?: (wave: number) => void) {
@@ -402,12 +403,30 @@ function startMatchTimer(onWaveChange?: (wave: number) => void) {
   tick();
 }
 
+/** Ưu tiên quái trâu (tanker) — đổ liên tục, ít scout */
 function pickUnitForWave(wave: number): UnitId {
   const r = Math.random();
-  if (wave >= 6 && r < 0.22) return 'flying';
-  if (wave >= 4 && r < 0.38) return 'tanker';
-  if (r < 0.55) return 'scout';
+  const flyChance = wave >= 5 ? 0.1 : wave >= 3 ? 0.06 : 0;
+  const tankChance = wave >= 10 ? 0.72 : wave >= 6 ? 0.68 : 0.62;
+
+  if (r < flyChance) return 'flying';
+  if (r < flyChance + tankChance) return 'tanker';
+  if (r < flyChance + tankChance + 0.22) return 'scout';
   return 'support';
+}
+
+/** Đợt UI vừa tăng → thêm một loạt quái (độ khó theo thời gian) */
+function spawnWaveAdvanceBurst(wave: number) {
+  if (!playerScene || playerScene.state.gameOver) return;
+  const plan = getWaveSpawnPlan(wave);
+  let spawned = 0;
+  const spawnNext = () => {
+    if (!playerScene || playerScene.state.gameOver || spawned >= plan.waveAdvanceBonus) return;
+    playerScene.spawnHostile(pickUnitForWave(wave), randomLane());
+    spawned += 1;
+    window.setTimeout(spawnNext, Math.max(80, plan.spawnIntervalMs * 0.85));
+  };
+  spawnNext();
 }
 
 let pendingBranchSlot: string | null = null;
@@ -484,6 +503,13 @@ async function initGame() {
         document.getElementById('battle-main')?.setAttribute('data-loading', 'error');
         return;
       }
+      if (!isSocketConfigured()) {
+        setBattleStatus('Chưa có URL server — quay Trang chủ, dán URL Render → Lưu', true);
+        showOnlineWaiting('Thiếu URL máy chủ. Quay Trang chủ → nhập URL Render → Lưu → Kiểm tra kết nối.');
+        document.getElementById('online-wait')?.classList.add('is-visible');
+        document.getElementById('battle-main')?.setAttribute('data-loading', 'error');
+        return;
+      }
       await initOnlineMatch(roomId);
       wireOnlineSend();
     }
@@ -550,14 +576,18 @@ async function initGame() {
     const scheduleNextBurst = () => {
       if (!playerScene || playerScene.state.gameOver) return;
       const wave = getCurrentWave();
-      const delay = Math.max(2000, 5200 - wave * 220);
+      const base = mode === 'ai' ? 2600 : 3400;
+      const delay = Math.max(650, base - wave * 280);
       aiWaveTimeout = window.setTimeout(runHostileBurst, delay);
     };
 
-    startMatchTimer((wave) => spawnBossIfNeeded(wave));
+    startMatchTimer((wave) => {
+      spawnBossIfNeeded(wave);
+      spawnWaveAdvanceBurst(wave);
+    });
 
     if (mode === 'ai' || mode === 'pvp') {
-      const aiFirstDelayMs = mode === 'ai' ? 1200 : 2800;
+      const aiFirstDelayMs = mode === 'ai' ? 400 : 2000;
       aiWaveTimeout = window.setTimeout(runHostileBurst, aiFirstDelayMs);
     }
 

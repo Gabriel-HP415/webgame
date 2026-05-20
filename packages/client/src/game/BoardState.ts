@@ -1,8 +1,13 @@
 import {
   BASE_HP,
-  BOSS_BOUNTY,
   BOSS_SPEED_MULT,
   DAMAGE_MATRIX,
+  getBossBounty,
+  getBountyMultiplier,
+  getEnemyHpMultiplier,
+  getIncomeMultiplier,
+  getMatchWave,
+  getTowerDamageMultiplier,
   INCOME_TICK_MS,
   MAX_TOWER_LEVEL,
   MORTAR_AOE_EDGE_MULT,
@@ -160,7 +165,9 @@ export function tickEconomy(state: BoardState, dt: number): void {
   state.incomeTimer += dt * 1000;
   while (state.incomeTimer >= INCOME_TICK_MS) {
     state.incomeTimer -= INCOME_TICK_MS;
-    state.gold += state.income;
+    const wave = getMatchWave(state.matchTime);
+    const tickGold = Math.max(1, Math.floor(state.income * getIncomeMultiplier(wave)));
+    state.gold += tickGold;
   }
 }
 
@@ -216,13 +223,15 @@ function emptyDebuff(): EnemyDebuff {
 export function spawnEnemy(state: BoardState, unitId: UnitId, lane: number): void {
   if (state.gameOver) return;
   const def = UNITS[unitId];
+  const wave = getMatchWave(state.matchTime);
+  const hp = Math.max(1, Math.floor(def.hp * getEnemyHpMultiplier(wave, unitId)));
   state.enemies.push({
     id: state.nextEnemyId++,
     unitId,
     lane,
     progress: 0,
-    hp: def.hp,
-    maxHp: def.hp,
+    hp,
+    maxHp: hp,
     flying: def.flying,
     isBoss: false,
     debuff: emptyDebuff(),
@@ -254,13 +263,14 @@ function enemySpeedMult(e: EnemyInstance, state: BoardState): number {
 
 function tickEnemyDebuffs(state: BoardState, dt: number): void {
   const now = state.matchTime;
+  const dotMult = getTowerDamageMultiplier(getMatchWave(state.matchTime));
   for (const e of state.enemies) {
     if (e.hp <= 0) continue;
     if (now < e.debuff.burnUntil) {
-      e.hp -= 3 * dt;
+      e.hp -= 3 * dotMult * dt;
     }
     if (now < e.debuff.poisonUntil) {
-      e.hp -= 4 * dt;
+      e.hp -= 4 * dotMult * dt;
     }
   }
 }
@@ -395,6 +405,16 @@ function applyBranchOnHit(
   return chain;
 }
 
+function grantKillBounty(state: BoardState, enemy: EnemyInstance): void {
+  const wave = getMatchWave(state.matchTime);
+  if (enemy.isBoss) {
+    state.gold += getBossBounty(wave);
+    return;
+  }
+  const mult = getBountyMultiplier(wave);
+  state.gold += Math.max(1, Math.floor(UNITS[enemy.unitId].bounty * mult));
+}
+
 function damageEnemy(
   state: BoardState,
   enemy: EnemyInstance,
@@ -407,7 +427,7 @@ function damageEnemy(
   enemy.hp -= dmg;
   if (enemy.hp <= 0 && !killed.has(enemy.id)) {
     killed.add(enemy.id);
-    state.gold += enemy.isBoss ? BOSS_BOUNTY : udef.bounty;
+    grantKillBounty(state, enemy);
   }
   return { slotId: '', towerId: 'mortar', enemyId: enemy.id };
 }
@@ -448,6 +468,8 @@ export function tickCombat(state: BoardState, dt: number): CombatShot[] {
 
   const killedThisTick = new Set<number>();
   const now = state.matchTime;
+  const wave = getMatchWave(state.matchTime);
+  const waveDmgMult = getTowerDamageMultiplier(wave);
 
   for (const [, tower] of state.towers) {
     if (tower.towerId === 'barracks') continue;
@@ -465,7 +487,7 @@ export function tickCombat(state: BoardState, dt: number): CombatShot[] {
     const fireRate = def.fireRate * rateMult;
     tower.fireCooldown = 1 / Math.max(0.25, fireRate);
 
-    const baseRaw = def.baseDamage * dmgMult * (def.aoeRadius ? 1.15 : 1);
+    const baseRaw = def.baseDamage * dmgMult * waveDmgMult * (def.aoeRadius ? 1.15 : 1);
 
     if (def.aoeRadius && def.aoeRadius > 0) {
       const impact = getEnemyPos(state, best);
@@ -495,7 +517,7 @@ export function tickCombat(state: BoardState, dt: number): CombatShot[] {
 
       if (best.hp <= 0 && !killedThisTick.has(best.id)) {
         killedThisTick.add(best.id);
-        state.gold += best.isBoss ? BOSS_BOUNTY : udef.bounty;
+        grantKillBounty(state, best);
       }
 
       if (tower.branch === 'electric' && chainIds.length > 0) {
@@ -510,7 +532,7 @@ export function tickCombat(state: BoardState, dt: number): CombatShot[] {
           ce.hp -= cdmg;
           if (ce.hp <= 0 && !killedThisTick.has(ce.id)) {
             killedThisTick.add(ce.id);
-            state.gold += ce.isBoss ? BOSS_BOUNTY : UNITS[ce.unitId].bounty;
+            grantKillBounty(state, ce);
           }
         }
       }
