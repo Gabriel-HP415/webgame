@@ -1,13 +1,23 @@
 import Phaser from 'phaser';
 import type { MapDefinition, TowerId, UnitId } from '@bto/shared';
-import { TOWERS, UNITS } from '@bto/shared';
-import neonGrid from '../../shared/maps/neon_grid.json';
+import {
+  BRANCH_INFO,
+  getWaveSpawnPlan,
+  MAP_CATALOG,
+  resolveMapId,
+  TOWERS,
+  UNITS,
+  type TowerBranchId,
+} from '@bto/shared';
 import { BoardScene, type BoardSceneConfig, type BoardSide } from './game/BoardScene.js';
 import type { BoardState } from './game/BoardState.js';
+import { matchSocket } from './net/matchSocket.js';
 
-const map = neonGrid as MapDefinition;
+const mapId = resolveMapId(new URLSearchParams(window.location.search).get('map'));
+const mapEntry = MAP_CATALOG[mapId] ?? MAP_CATALOG.neon_crossroads;
+const map = mapEntry.def as MapDefinition;
 
-export type GameMode = 'ai' | 'pvp';
+export type GameMode = 'ai' | 'pvp' | 'online';
 
 /** Scene player — gán sau khi Phaser boot xong */
 let playerScene: BoardScene | null = null;
@@ -15,7 +25,18 @@ let opponentScene: BoardScene | null = null;
 
 function getGameMode(): GameMode {
   const m = new URLSearchParams(window.location.search).get('mode');
-  return m === 'pvp' ? 'pvp' : 'ai';
+  if (m === 'online') return 'online';
+  if (m === 'pvp') return 'pvp';
+  return 'ai';
+}
+
+function getOnlineRoomId(): string | null {
+  const room = new URLSearchParams(window.location.search).get('room');
+  return room?.trim() ? room.trim().toUpperCase() : null;
+}
+
+function getPilotName(): string {
+  return new URLSearchParams(window.location.search).get('name')?.trim().slice(0, 24) ?? 'Pilot';
 }
 
 function applyModeToDom(mode: GameMode) {
@@ -24,20 +45,35 @@ function applyModeToDom(mode: GameMode) {
   const dockSends = document.getElementById('dock-sends');
   const hint = document.getElementById('dock-hint');
   const label = document.getElementById('hud-mode-label');
+  const mapLabel = mapEntry.label.toUpperCase();
 
   if (mode === 'ai') {
     battleMain?.classList.add('battle-main--solo');
     dockSends?.classList.add('is-hidden');
     if (hint) {
       hint.textContent =
-        'Chế độ AI: quân địch xuất hiện theo đợt — xây tháp để bảo vệ căn cứ. Chuột phải để bán tháp.';
+        'Click slot trống xây tháp · Click tháp để nâng cấp (Lv3 chọn hiệu ứng) · Mortar nổ AOE · Boss mỗi 10 đợt · Chuột phải bán.';
     }
-    if (label) label.textContent = 'CHẾ ĐỘ AI — NEON GRID';
-  } else {
-    if (label) label.textContent = 'LUYỆN PvP — NEON GRID';
+    if (label) label.textContent = `CHẾ ĐỘ AI — ${mapLabel}`;
+  } else if (mode === 'online') {
+    battleMain?.classList.add('battle-main--solo');
+    document.querySelector('.board-wrap.opponent')?.classList.add('is-hidden');
+    dockSends?.classList.remove('is-hidden');
+    const room = getOnlineRoomId();
+    if (label) {
+      label.textContent = room
+        ? `ONLINE 1v1 — Phòng ${room}`
+        : `ONLINE — thiếu mã phòng`;
+    }
     if (hint) {
       hint.textContent =
-        'Hai bàn: gửi quân (tốn vàng) sang đối thủ; AI cũng tấn công bàn của bạn. Chuột phải để bán tháp.';
+        'Gửi quân tốn vàng → quân xuất hiện trên bàn đối thủ · Không có AI · Chuột phải bán tháp.';
+    }
+  } else {
+    if (label) label.textContent = `LUYỆN PvP — ${mapLabel}`;
+    if (hint) {
+      hint.textContent =
+        'Hai bàn · gửi quân sang đối thủ · Flak/Laser chống bay · Chuột phải bán tháp.';
     }
   }
 
@@ -45,6 +81,45 @@ function applyModeToDom(mode: GameMode) {
   if (pilot && label) {
     label.textContent += ` · ${pilot}`;
   }
+}
+
+function applyWideMapEconomy(state: BoardState) {
+  if (map.slots.length >= 18) {
+    state.gold = 520;
+    state.income = 14;
+  }
+}
+
+function renderDockTowerInfo(id: TowerId) {
+  const t = TOWERS[id];
+  const title = document.getElementById('dock-info-title');
+  const summary = document.getElementById('dock-info-summary');
+  const stats = document.getElementById('dock-info-stats');
+  const traits = document.getElementById('dock-info-traits');
+  if (!title || !summary || !stats || !traits) return;
+
+  title.textContent = t.name;
+  summary.textContent = t.summary;
+  stats.innerHTML = `
+    <li><span>Giá xây</span><strong>${t.buildCost} vàng</strong></li>
+    <li><span>Sát thương</span><strong>${t.baseDamage}</strong></li>
+    <li><span>Tầm</span><strong>${t.range} px</strong></li>
+    <li><span>Hồi chiêu</span><strong>${t.fireRate > 0 ? `${(1 / t.fireRate).toFixed(2)}s` : '—'}</strong></li>
+    <li><span>Bắn quân bay</span><strong>${t.targetsAir ? 'Có' : 'Không'}</strong></li>
+    <li><span>AOE</span><strong>${t.aoeRadius ? 'Có' : 'Không'}</strong></li>
+    <li><span>Loại sát thương</span><strong>${t.damageType}</strong></li>
+  `;
+  traits.innerHTML = t.traits.map((tr) => `<span class="dock-trait">${tr}</span>`).join('');
+}
+
+function setupDockTowerInfo() {
+  document.querySelectorAll<HTMLButtonElement>('.dock-btn[data-tower]').forEach((btn) => {
+    const id = btn.dataset.tower as TowerId;
+    btn.addEventListener('mouseenter', () => renderDockTowerInfo(id));
+    btn.addEventListener('focus', () => renderDockTowerInfo(id));
+  });
+  const active = document.querySelector<HTMLButtonElement>('.dock-btn[data-tower].active');
+  renderDockTowerInfo((active?.dataset.tower as TowerId) ?? 'flak');
 }
 
 function initDockPriceLabels() {
@@ -185,6 +260,85 @@ function setupMatchIntro() {
   });
 }
 
+function showOnlineWaiting(message: string) {
+  const el = document.getElementById('online-wait');
+  const msg = document.getElementById('online-wait-msg');
+  if (el) {
+    el.classList.add('is-visible');
+    el.setAttribute('aria-hidden', 'false');
+  }
+  if (msg) msg.textContent = message;
+}
+
+function hideOnlineWaiting() {
+  const el = document.getElementById('online-wait');
+  if (el) {
+    el.classList.remove('is-visible');
+    el.setAttribute('aria-hidden', 'true');
+  }
+}
+
+function initOnlineMatch(roomId: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (ok: boolean, err?: Error) => {
+      if (settled) return;
+      settled = true;
+      if (ok) resolve();
+      else reject(err ?? new Error('Kết nối online thất bại'));
+    };
+
+    const timeout = window.setTimeout(() => {
+      finish(false, new Error('Hết thời gian chờ đối thủ — gửi lại link phòng cho bạn.'));
+    }, 120_000);
+
+    showOnlineWaiting('Đang kết nối máy chủ...');
+
+    matchSocket.connect({
+      onConnect: () => {
+        showOnlineWaiting('Đang vào phòng… Chờ người chơi thứ 2.');
+        matchSocket.joinRoom(roomId, getPilotName());
+      },
+      onPlayerJoined: (players) => {
+        if (players.length < 2) {
+          showOnlineWaiting('Đã vào phòng — gửi link/mã phòng cho bạn bè…');
+        } else {
+          showOnlineWaiting('Đủ 2 người — bắt đầu trận…');
+        }
+      },
+      onMatchStart: () => {
+        window.clearTimeout(timeout);
+        hideOnlineWaiting();
+        finish(true);
+      },
+      onEnemySpawn: (evt) => {
+        const p = evt.payload;
+        playerScene?.spawnHostile(p.unitId, p.lane);
+      },
+      onPlayerLeft: (name) => {
+        showOnlineWaiting(`${name} đã rời phòng. Chờ người mới…`);
+      },
+      onError: (message) => {
+        window.clearTimeout(timeout);
+        setBattleStatus(message, true);
+        finish(false, new Error(message));
+      },
+    });
+  });
+}
+
+function wireOnlineSend() {
+  if (!playerScene) return;
+  const originalTrySend = playerScene.trySend.bind(playerScene);
+  playerScene.trySend = (unitId: UnitId, lane = 0) => {
+    const ok = originalTrySend(unitId, lane);
+    if (ok && matchSocket.connected) {
+      matchSocket.sendEnemy({ unitId, lane });
+    }
+    return ok;
+  };
+}
+
 function showGameOverOverlay() {
   const overlay = document.getElementById('game-over');
   if (overlay) {
@@ -207,7 +361,9 @@ function setupDockControls() {
       if (!playerScene || playerScene.state.gameOver || towerBtn.disabled) return;
       document.querySelectorAll('.dock-btn[data-tower]').forEach((b) => b.classList.remove('active'));
       towerBtn.classList.add('active');
-      playerScene.setSelectedTower(towerBtn.dataset.tower as TowerId);
+      const tid = towerBtn.dataset.tower as TowerId;
+      playerScene.setSelectedTower(tid);
+      renderDockTowerInfo(tid);
       return;
     }
 
@@ -221,21 +377,77 @@ function setupDockControls() {
   });
 }
 
-function startMatchTimer() {
-  let matchSeconds = 0;
+let matchSeconds = 0;
+
+function getCurrentWave(): number {
+  return Math.floor(matchSeconds / 45) + 1;
+}
+
+function startMatchTimer(onWaveChange?: (wave: number) => void) {
+  let lastWave = 1;
   const tick = () => {
     if (playerScene?.state.gameOver) return;
     matchSeconds += 1;
     const el = document.getElementById('match-timer');
     if (el) el.textContent = formatTime(matchSeconds);
+    const wave = getCurrentWave();
     const wEl = document.getElementById('wave-num');
-    if (wEl) wEl.textContent = String(Math.floor(matchSeconds / 45) + 1);
+    if (wEl) wEl.textContent = String(wave);
+    if (wave !== lastWave) {
+      lastWave = wave;
+      onWaveChange?.(wave);
+    }
   };
   window.setInterval(tick, 1000);
   tick();
 }
 
-const units: UnitId[] = ['scout', 'tanker', 'flying', 'support'];
+function pickUnitForWave(wave: number): UnitId {
+  const r = Math.random();
+  if (wave >= 6 && r < 0.22) return 'flying';
+  if (wave >= 4 && r < 0.38) return 'tanker';
+  if (r < 0.55) return 'scout';
+  return 'support';
+}
+
+let pendingBranchSlot: string | null = null;
+
+function setupBranchModal() {
+  const modal = document.getElementById('branch-modal');
+  const optionsEl = document.getElementById('branch-options');
+  if (!modal || !optionsEl) return;
+
+  const close = () => {
+    modal.classList.remove('is-visible');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('branch-modal-open');
+    pendingBranchSlot = null;
+    optionsEl.innerHTML = '';
+  };
+
+  const open = (slotId: string, options: TowerBranchId[]) => {
+    pendingBranchSlot = slotId;
+    optionsEl.innerHTML = '';
+    for (const id of options) {
+      const info = BRANCH_INFO[id];
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'branch-option-btn';
+      btn.style.setProperty('--branch-color', info.color);
+      btn.innerHTML = `<strong>${info.name}</strong><span>${info.summary}</span>`;
+      btn.addEventListener('click', () => {
+        playerScene?.applyBranch(slotId, id);
+        close();
+      });
+      optionsEl.appendChild(btn);
+    }
+    modal.classList.add('is-visible');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('branch-modal-open');
+  };
+
+  return { open, close };
+}
 
 function randomLane(): number {
   return Math.floor(Math.random() * map.lanes.length);
@@ -251,8 +463,9 @@ async function initGame() {
   applyModeToDom(mode);
   setupMatchIntro();
   initDockPriceLabels();
+  setupDockTowerInfo();
   setupDockControls();
-  startMatchTimer();
+  const branchModal = setupBranchModal();
 
   document.getElementById('battle-main')?.setAttribute('data-loading', 'true');
 
@@ -264,7 +477,23 @@ async function initGame() {
     playerScene = await playerPromise;
     opponentScene = await opponentPromise;
 
+    if (mode === 'online') {
+      const roomId = getOnlineRoomId();
+      if (!roomId) {
+        setBattleStatus('Thiếu mã phòng — quay Trang chủ → Chơi Online', true);
+        document.getElementById('battle-main')?.setAttribute('data-loading', 'error');
+        return;
+      }
+      await initOnlineMatch(roomId);
+      wireOnlineSend();
+    }
+
+    applyWideMapEconomy(playerScene.state);
+    updateHud('player', playerScene.state);
+
     if (mode === 'pvp' && opponentScene) {
+      applyWideMapEconomy(opponentScene.state);
+      updateHud('opponent', opponentScene.state);
       const originalTrySend = playerScene.trySend.bind(playerScene);
       playerScene.trySend = (unitId: UnitId, lane = 0) => {
         const ok = originalTrySend(unitId, lane);
@@ -273,34 +502,68 @@ async function initGame() {
       };
     }
 
+    playerScene.onBranchPickRequest = (slotId, options) => {
+      branchModal?.open(slotId, options);
+    };
+
     let aiWaveTimeout: number | null = null;
-    let aiWaveInterval: number | null = null;
+    let bossSpawnedForWave = 0;
 
     const stopAiWaves = () => {
       if (aiWaveTimeout !== null) clearTimeout(aiWaveTimeout);
-      if (aiWaveInterval !== null) clearInterval(aiWaveInterval);
       aiWaveTimeout = null;
-      aiWaveInterval = null;
     };
 
-    const runHostileWave = () => {
+    const spawnBossIfNeeded = (wave: number) => {
+      const plan = getWaveSpawnPlan(wave);
+      if (!plan.isBossWave || bossSpawnedForWave === wave) return;
+      bossSpawnedForWave = wave;
+      playerScene?.spawnBoss(randomLane(), plan.bossHp);
+    };
+
+    const runHostileBurst = () => {
       if (!playerScene || playerScene.state.gameOver) {
         stopAiWaves();
         return;
       }
-      const unit = Phaser.Utils.Array.GetRandom(units);
-      playerScene.spawnHostile(unit, randomLane());
+      const wave = getCurrentWave();
+      const plan = getWaveSpawnPlan(wave);
+      spawnBossIfNeeded(wave);
+
+      let spawned = 0;
+      const spawnNext = () => {
+        if (!playerScene || playerScene.state.gameOver) {
+          scheduleNextBurst();
+          return;
+        }
+        if (spawned >= plan.gruntCount) {
+          scheduleNextBurst();
+          return;
+        }
+        playerScene.spawnHostile(pickUnitForWave(wave), randomLane());
+        spawned += 1;
+        aiWaveTimeout = window.setTimeout(spawnNext, plan.spawnIntervalMs);
+      };
+      spawnNext();
     };
 
-    const aiIntervalMs = mode === 'ai' ? 6000 : 8500;
-    const aiFirstDelayMs = mode === 'ai' ? 2000 : 3500;
-    aiWaveTimeout = window.setTimeout(() => {
-      runHostileWave();
-      aiWaveInterval = window.setInterval(runHostileWave, aiIntervalMs);
-    }, aiFirstDelayMs);
+    const scheduleNextBurst = () => {
+      if (!playerScene || playerScene.state.gameOver) return;
+      const wave = getCurrentWave();
+      const delay = Math.max(2000, 5200 - wave * 220);
+      aiWaveTimeout = window.setTimeout(runHostileBurst, delay);
+    };
+
+    startMatchTimer((wave) => spawnBossIfNeeded(wave));
+
+    if (mode === 'ai' || mode === 'pvp') {
+      const aiFirstDelayMs = mode === 'ai' ? 1200 : 2800;
+      aiWaveTimeout = window.setTimeout(runHostileBurst, aiFirstDelayMs);
+    }
 
     playerScene.onGameOver = () => {
       stopAiWaves();
+      if (mode === 'online') matchSocket.disconnect();
       refreshDockAffordability(playerScene!.state);
       showGameOverOverlay();
     };

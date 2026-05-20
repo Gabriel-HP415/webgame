@@ -26,24 +26,50 @@
       <label for="pilot-name">Tên hiển thị (tùy chọn)</label>
       <input id="pilot-name" type="text" placeholder="PILOT_ID" maxlength="24" autocomplete="nickname" />
 
-      <a class="home-btn-primary" href="game.html?mode=ai" id="btn-ai">
+      <label for="map-select">Chọn bản đồ</label>
+      <select id="map-select" class="home-select">
+        <option value="neon_crossroads" selected>Neon Crossroads — 5 nhánh, rộng (mặc định)</option>
+        <option value="neon_grid">Neon Grid — 2 đường, nhỏ</option>
+      </select>
+      <p class="home-note" style="margin-top: -8px; margin-bottom: 16px">
+        Crossroads: ngã ba, nhiều slot — phù hợp đội hình lớn và boss tương lai.
+      </p>
+
+      <a class="home-btn-primary" href="game.html?mode=ai&amp;map=neon_crossroads" id="btn-ai">
         Chiến đấu với AI
       </a>
       <p class="home-note" style="margin-top: -4px; margin-bottom: 16px">
         Chơi một mình: một bản đồ, AI định kỳ gửi quân tấn công căn cứ của bạn. Phù hợp luyện tập và khám phá tháp.
       </p>
 
-      <a class="home-btn-secondary" href="game.html?mode=pvp">
+      <a class="home-btn-secondary" href="game.html?mode=pvp&amp;map=neon_crossroads" id="btn-pvp">
         Luyện tập PvP (hai bàn)
       </a>
       <p class="home-note" style="margin-top: 8px; margin-bottom: 16px">
         Hai khung màn hình: gửi quân sang bàn đối thủ, đồng thời chịu áp lực từ AI lên bàn của bạn.
       </p>
 
-      <div class="home-row">
-        <span class="home-btn-secondary" style="opacity: 0.5; cursor: not-allowed" title="Sắp có">Ghép trận</span>
-        <span class="home-btn-secondary" style="opacity: 0.5; cursor: not-allowed" title="Sắp có">Tìm phòng</span>
+      <hr class="home-divider" />
+      <h2 class="home-section-title">Chơi Online với bạn bè</h2>
+      <p class="home-note" id="server-hint">Đang tải cấu hình server…</p>
+
+      <button type="button" class="home-btn-primary" id="btn-create-room">Tạo phòng (Host)</button>
+      <div id="online-room-box" class="online-room-box" hidden>
+        <p class="home-note">Mã phòng: <strong id="online-room-code" class="mono"></strong></p>
+        <p class="home-note">Link mời: <a id="online-invite-link" href="#" class="home-link"></a></p>
+        <a class="home-btn-secondary" id="btn-enter-room" href="#">Vào trận (chờ đối thủ)</a>
       </div>
+
+      <label for="room-code">Hoặc nhập mã phòng</label>
+      <div class="home-row home-row--join">
+        <input id="room-code" type="text" class="home-input-code" placeholder="VD: ABC123" maxlength="6" autocomplete="off" />
+        <button type="button" class="home-btn-secondary" id="btn-join-room">Tham gia</button>
+      </div>
+      <p class="online-status" id="online-status"></p>
+      <p class="home-note">
+        <strong>Vercel</strong> chỉ host trang web. Cần thêm máy chủ <strong>Render</strong> (miễn phí) cho Socket — hướng dẫn trong
+        <code>docs/DEPLOY_ONLINE.md</code>.
+      </p>
 
     <p class="home-note">
       Bản mockup HTML gốc (Tailwind CDN) nằm trong repo tại <code>UI/trangchu/code.html</code>.

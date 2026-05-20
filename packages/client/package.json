@@ -10,7 +10,8 @@
   },
   "dependencies": {
     "@bto/shared": "*",
-    "phaser": "^3.80.1"
+    "phaser": "^3.80.1",
+    "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
     "typescript": "^5.4.5",

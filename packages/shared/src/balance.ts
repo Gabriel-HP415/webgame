@@ -9,8 +9,45 @@ export const LEAK_DAMAGE_DEFAULT = 1;
 
 export type DamageType = 'ballistic' | 'explosive' | 'energy';
 export type ArmorType = 'light' | 'heavy' | 'shielded' | 'none';
-export type TowerId = 'mortar' | 'machine_gun' | 'laser' | 'barracks';
+export type TowerId = 'flak' | 'mortar' | 'machine_gun' | 'laser' | 'barracks';
 export type UnitId = 'scout' | 'tanker' | 'flying' | 'support';
+export type TowerBranchId = 'fire' | 'ice' | 'poison' | 'electric';
+
+export const MAX_TOWER_LEVEL = 3;
+export const ALL_BRANCHES: TowerBranchId[] = ['fire', 'ice', 'poison', 'electric'];
+
+export const BRANCH_INFO: Record<
+  TowerBranchId,
+  { name: string; summary: string; color: string }
+> = {
+  fire: { name: 'Lửa', summary: '+35% sát thương mỗi viên', color: '#f97316' },
+  ice: { name: 'Băng', summary: 'Làm chậm 50% trong 2.5s', color: '#67e8f9' },
+  poison: { name: 'Độc', summary: 'Rút máu 4 HP/giây trong 4s', color: '#a3e635' },
+  electric: {
+    name: 'Điện',
+    summary: 'Lan sang 2 mục tiêu gần (65% sát thương)',
+    color: '#fde047',
+  },
+};
+
+/** Mỗi level: damage + fireRate bonus (cộng dồn) */
+export const TOWER_LEVEL_SCALE: Record<
+  TowerId,
+  { damagePerLevel: number; fireRatePerLevel: number }
+> = {
+  flak: { damagePerLevel: 0.1, fireRatePerLevel: 0.1 },
+  mortar: { damagePerLevel: 0.14, fireRatePerLevel: 0.04 },
+  machine_gun: { damagePerLevel: 0.09, fireRatePerLevel: 0.12 },
+  laser: { damagePerLevel: 0.11, fireRatePerLevel: 0.08 },
+  barracks: { damagePerLevel: 0, fireRatePerLevel: 0 },
+};
+
+export const BOSS_BASE_HP = 900;
+export const BOSS_HP_PER_WAVE = 150;
+export const BOSS_SPEED_MULT = 0.32;
+export const BOSS_BOUNTY = 120;
+export const MORTAR_BOMB_RADIUS = 72;
+export const MORTAR_AOE_EDGE_MULT = 0.35;
 
 export const DAMAGE_MATRIX: Record<DamageType, Record<ArmorType, number>> = {
   ballistic: { light: 1, heavy: 0.7, shielded: 0.5, none: 1 },
@@ -30,9 +67,27 @@ export interface TowerDef {
   fireRate: number;
   aoeRadius?: number;
   targetsAir: boolean;
+  /** Mô tả ngắn cho bảng thông tin dock */
+  summary: string;
+  /** Nhãn: Bắn bay, AOE, Sớm game… */
+  traits: string[];
 }
 
 export const TOWERS: Record<TowerId, TowerDef> = {
+  flak: {
+    id: 'flak',
+    name: 'Flak',
+    buildCost: 85,
+    upgradeCosts: [60, 90],
+    branchCost: 80,
+    damageType: 'ballistic',
+    baseDamage: 7,
+    range: 158,
+    fireRate: 5.5,
+    targetsAir: true,
+    summary: 'Phòng không giá rẻ — chuyên trị quân bay, bắn rất nhanh.',
+    traits: ['Bắn bay', 'Sớm game', 'Hồi nhanh'],
+  },
   mortar: {
     id: 'mortar',
     name: 'Mortar',
@@ -43,8 +98,10 @@ export const TOWERS: Record<TowerId, TowerDef> = {
     baseDamage: 36,
     range: 160,
     fireRate: 0.5,
-    aoeRadius: 48,
+    aoeRadius: MORTAR_BOMB_RADIUS,
     targetsAir: false,
+    summary: 'Sát thương diện rộng, mạnh với đám đông bộ binh.',
+    traits: ['AOE', 'Chậm', 'Mặt đất'],
   },
   machine_gun: {
     id: 'machine_gun',
@@ -56,7 +113,9 @@ export const TOWERS: Record<TowerId, TowerDef> = {
     baseDamage: 5.5,
     range: 140,
     fireRate: 4,
-    targetsAir: false,
+    targetsAir: true,
+    summary: 'Đa năng đầu game — bắn được cả bay (sát thương bay vừa).',
+    traits: ['Bắn bay (nhẹ)', 'Nhanh', 'Sớm game'],
   },
   laser: {
     id: 'laser',
@@ -69,6 +128,8 @@ export const TOWERS: Record<TowerId, TowerDef> = {
     range: 180,
     fireRate: 10,
     targetsAir: true,
+    summary: 'Tầm xa, tốc độ cao — counter quân bay và khiên năng lượng.',
+    traits: ['Bắn bay', 'Tầm xa', 'Năng lượng'],
   },
   barracks: {
     id: 'barracks',
@@ -81,6 +142,8 @@ export const TOWERS: Record<TowerId, TowerDef> = {
     range: 0,
     fireRate: 0,
     targetsAir: false,
+    summary: 'Tăng thu nhập / hỗ trợ (chưa bắn — dùng để mở rộng kinh tế).',
+    traits: ['Kinh tế', 'Không bắn'],
   },
 };
 
@@ -129,7 +192,7 @@ export const UNITS: Record<UnitId, UnitDef> = {
     incomeBoost: 3,
     bounty: 18,
     hp: 80,
-    speed: 70,
+    speed: 52,
     armor: 'light',
     flying: true,
     leakDamage: 1,
@@ -156,10 +219,28 @@ export function applyDamage(
   return Math.max(1, Math.floor(raw * DAMAGE_MATRIX[damageType][armor]));
 }
 
-export function towerUpgradeCost(towerId: TowerId, level: number): number {
-  const t = TOWERS[towerId];
-  if (level === 1) return t.buildCost;
-  if (level === 2) return t.upgradeCosts[0];
-  if (level === 3) return t.upgradeCosts[1];
-  return t.branchCost;
+export function towerUpgradeCost(tower: { towerId: TowerId; level: number }): number | null {
+  if (tower.level >= MAX_TOWER_LEVEL) return null;
+  const t = TOWERS[tower.towerId];
+  if (tower.level === 1) return t.upgradeCosts[0];
+  if (tower.level === 2) return t.upgradeCosts[1];
+  return null;
+}
+
+/** Mật độ quái theo đợt (đợt = wave UI, mỗi ~45s) */
+export function getWaveSpawnPlan(wave: number): {
+  isBossWave: boolean;
+  gruntCount: number;
+  spawnIntervalMs: number;
+  bossHp: number;
+} {
+  const w = Math.max(1, wave);
+  const isBossWave = w % 10 === 0;
+  /** Boss wave vẫn có vài đợt quân nhỏ; đợt thường dày hơn */
+  const gruntCount = isBossWave
+    ? 5 + Math.floor(w / 10)
+    : Math.min(24, 4 + Math.floor(w * 1.15));
+  const spawnIntervalMs = Math.max(160, 820 - w * 58);
+  const bossHp = BOSS_BASE_HP + w * BOSS_HP_PER_WAVE;
+  return { isBossWave, gruntCount, spawnIntervalMs, bossHp };
 }

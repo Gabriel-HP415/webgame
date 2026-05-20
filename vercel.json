@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "npm install",
+  "buildCommand": "npm run build -w @bto/shared && npm run build -w @bto/client",
+  "outputDirectory": "packages/client/dist",
+  "framework": null,
+  "rewrites": [
+    { "source": "/game.html", "destination": "/game.html" },
+    { "source": "/assets/:path*", "destination": "/assets/:path*" }
+  ]
+}

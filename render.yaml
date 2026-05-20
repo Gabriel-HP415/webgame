@@ -1,0 +1,17 @@
+# Deploy game server (Socket.io) — free tier Render
+# Dashboard: New → Blueprint → connect repo, or Web Service with this config.
+services:
+  - type: web
+    name: bto-game-server
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build -w @bto/shared && npm run build -w @bto/server
+    startCommand: npm run start -w @bto/server
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: CORS_ORIGIN
+        sync: false
+      - key: PORT
+        value: "3001"

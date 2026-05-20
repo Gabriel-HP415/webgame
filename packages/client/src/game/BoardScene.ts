@@ -1,23 +1,42 @@
 import Phaser from 'phaser';
-import type { MapDefinition, TowerId, UnitId } from '@bto/shared';
+import type { MapDefinition, TowerBranchId, TowerId, UnitId } from '@bto/shared';
+import { BRANCH_INFO, TOWERS, UNITS } from '@bto/shared';
 import {
+  applyTowerBranch,
   buildTower,
   createBoardState,
+  getEnemyMapPosition,
+  getTowerCombatRange,
+  getTowerFireInterval,
+  getUpgradeCost,
+  RANGE_SLACK,
+  rollBranchOptions,
   sellTower,
   sendEnemy,
+  spawnBoss,
   spawnEnemy,
   tickCombat,
   tickEconomy,
   tickEnemies,
+  upgradeTower,
   type BoardState,
+  type CombatShot,
 } from './BoardState.js';
-import { positionOnPath } from './pathUtils.js';
+import { playCombatShot, playElectricChain } from './combatVfx.js';
 
 const TOWER_COLORS: Record<TowerId, number> = {
+  flak: 0xfbbf24,
   mortar: 0xff6b35,
   machine_gun: 0x8aebff,
   laser: 0xb6bcff,
   barracks: 0x4ade80,
+};
+
+const UNIT_LABELS: Record<UnitId, string> = {
+  scout: 'Trinh sát',
+  tanker: 'Xe tăng',
+  flying: 'Bay',
+  support: 'Hỗ trợ',
 };
 
 export type BoardSide = 'player' | 'opponent';
@@ -32,15 +51,19 @@ export interface BoardSceneConfig {
 export class BoardScene extends Phaser.Scene {
   declare state: BoardState;
   config!: BoardSceneConfig;
-  selectedTower: TowerId = 'mortar';
+  selectedTower: TowerId = 'flak';
   slotGraphics!: Phaser.GameObjects.Graphics;
   pathGraphics!: Phaser.GameObjects.Graphics;
   gridGraphics?: Phaser.GameObjects.Graphics;
   towerSprites = new Map<string, Phaser.GameObjects.Container>();
-  enemySprites = new Map<number, Phaser.GameObjects.Arc>();
+  enemySprites = new Map<number, Phaser.GameObjects.Container>();
   onHudUpdate?: (s: BoardState) => void;
   onGameOver?: () => void;
+  onBranchPickRequest?: (slotId: string, options: TowerBranchId[]) => void;
   private gameOverNotified = false;
+  private rangeRing?: Phaser.GameObjects.Arc;
+  private rangeHoverSlotId: string | null = null;
+  private rangePreviewSlotId: string | null = null;
 
   constructor(key: string) {
     super(key);
@@ -58,6 +81,7 @@ export class BoardScene extends Phaser.Scene {
     this.slotGraphics = this.add.graphics();
     this.pathGraphics.setDepth(1);
     this.slotGraphics.setDepth(2);
+    this.input.setTopOnly(false);
 
     this.scale.on(Phaser.Scale.Events.RESIZE, this.layoutBattlefield, this);
     this.layoutBattlefield();
@@ -72,6 +96,12 @@ export class BoardScene extends Phaser.Scene {
         return;
       }
       this.tryBuildAt(p.worldX, p.worldY);
+    });
+
+    this.input.on('gameout', () => {
+      this.rangeHoverSlotId = null;
+      this.rangePreviewSlotId = null;
+      this.syncRangeRing();
     });
 
     const canvas = this.game.canvas;
@@ -97,11 +127,13 @@ export class BoardScene extends Phaser.Scene {
     this.drawSlots();
     this.drawBase();
     this.repositionTowerSprites();
+    this.syncRangeRing();
   };
 
   setSelectedTower(id: TowerId) {
     this.selectedTower = id;
     this.drawSlots();
+    this.syncRangeRing();
   }
 
   trySend(unitId: UnitId, lane = 0): boolean {
@@ -123,6 +155,20 @@ export class BoardScene extends Phaser.Scene {
     this.emitHud();
   }
 
+  spawnBoss(lane: number, bossHp: number) {
+    if (this.state.gameOver) return;
+    spawnBoss(this.state, lane, bossHp);
+    this.emitHud();
+  }
+
+  applyBranch(slotId: string, branch: TowerBranchId) {
+    const tower = this.state.towers.get(slotId);
+    if (!tower) return;
+    applyTowerBranch(tower, branch);
+    this.addTowerVisual(slotId);
+    this.emitHud();
+  }
+
   /** Phaser gửi `delta` theo ms; logic bàn cờ dùng giây */
   update(_t: number, deltaMs: number) {
     if (this.state.gameOver) {
@@ -132,8 +178,11 @@ export class BoardScene extends Phaser.Scene {
     const dt = deltaMs / 1000;
     tickEconomy(this.state, dt);
     tickEnemies(this.state, dt);
-    tickCombat(this.state, dt);
+    const shots = tickCombat(this.state, dt);
+    this.playCombatShots(shots);
+    this.updateTowerCooldownBars();
     this.syncEnemies();
+    this.updateRangeFromPointer();
     this.emitHud();
     this.maybeNotifyGameOver();
   }
@@ -161,11 +210,32 @@ export class BoardScene extends Phaser.Scene {
     const wx = slot.x * scale.sx;
     const wy = slot.y * scale.sy;
     if (this.dist(x, y, wx, wy) > this.slotHitRadiusWorld()) return;
+    if (this.state.towers.has(slot.id)) {
+      this.tryUpgradeAt(slot.id);
+      return;
+    }
     if (buildTower(this.state, slot.id, this.selectedTower)) {
       this.addTowerVisual(slot.id);
       this.drawSlots();
       this.emitHud();
     }
+  }
+
+  private tryUpgradeAt(slotId: string) {
+    const tower = this.state.towers.get(slotId);
+    if (!tower || tower.towerId === 'barracks') return;
+    const cost = getUpgradeCost(tower);
+    if (cost === null || this.state.gold < cost) return;
+
+    const result = upgradeTower(this.state, slotId);
+    if (result === false) return;
+
+    if (result === 'pick_branch') {
+      this.onBranchPickRequest?.(slotId, rollBranchOptions());
+    }
+    this.refreshTowerVisual(slotId);
+    this.drawSlots();
+    this.emitHud();
   }
 
   private trySellAt(x: number, y: number) {
@@ -287,48 +357,321 @@ export class BoardScene extends Phaser.Scene {
   }
 
   private addTowerVisual(slotId: string) {
+    this.towerSprites.get(slotId)?.destroy();
+    this.towerSprites.delete(slotId);
     const slot = this.config.map.slots.find((s) => s.id === slotId);
     const tower = this.state.towers.get(slotId);
     if (!slot || !tower) return;
     const { sx, sy } = this.getScale();
     const container = this.add.container(slot.x * sx, slot.y * sy);
+    const def = TOWERS[tower.towerId];
+    const branchColor = tower.branch ? parseInt(BRANCH_INFO[tower.branch].color.slice(1), 16) : 0xffffff;
+
     const body = this.add.rectangle(0, 0, 28, 28, TOWER_COLORS[tower.towerId], 0.9);
-    body.setStrokeStyle(2, 0xffffff, 0.4);
-    const label = this.add.text(0, 0, tower.level.toString(), {
-      fontSize: '12px',
+    body.setStrokeStyle(2, branchColor, tower.branch ? 0.95 : 0.4);
+
+    const nameText = this.add.text(0, -20, def.name, {
+      fontSize: '9px',
+      color: '#dae2fd',
+      fontFamily: 'JetBrains Mono, monospace',
+      stroke: '#0b1326',
+      strokeThickness: 2,
+    });
+    nameText.setOrigin(0.5);
+
+    const lvText = this.add.text(0, 0, `Lv${tower.level}`, {
+      fontSize: '11px',
       color: '#0b1326',
       fontStyle: 'bold',
+      fontFamily: 'JetBrains Mono, monospace',
     });
-    label.setOrigin(0.5);
-    container.add([body, label]);
+    lvText.setOrigin(0.5);
+
+    const cdBarW = 30;
+    const cdBarH = 4;
+    const cdY = 20;
+    const cdBg = this.add.rectangle(0, cdY, cdBarW, cdBarH, 0x1a2030, 0.85);
+    const cdFill = this.add.rectangle(-cdBarW / 2, cdY, 0, cdBarH, TOWER_COLORS[tower.towerId], 1);
+    cdFill.setOrigin(0, 0.5);
+
+    const isBarracks = tower.towerId === 'barracks';
+    cdBg.setVisible(!isBarracks);
+    cdFill.setVisible(!isBarracks);
+
+    container.add([body, nameText, lvText, cdBg, cdFill]);
+    container.setDepth(15);
+    container.setData('body', body);
+    container.setData('lvText', lvText);
+    container.setData('cdFill', cdFill);
+    container.setData('cdBg', cdBg);
+    container.setData('cdBarW', cdBarW);
+    container.setData('cdY', cdY);
     this.towerSprites.set(slotId, container);
+    this.refreshTowerCooldownBar(slotId);
+  }
+
+  refreshTowerVisual(slotId: string) {
+    if (!this.towerSprites.has(slotId)) {
+      this.addTowerVisual(slotId);
+      return;
+    }
+    const tower = this.state.towers.get(slotId);
+    const container = this.towerSprites.get(slotId);
+    if (!tower || !container) return;
+
+    const lvText = container.getData('lvText') as Phaser.GameObjects.Text;
+    const body = container.getData('body') as Phaser.GameObjects.Rectangle;
+    if (lvText) lvText.setText(`Lv${tower.level}`);
+    if (body && tower.branch) {
+      const c = parseInt(BRANCH_INFO[tower.branch].color.slice(1), 16);
+      body.setStrokeStyle(3, c, 1);
+    }
+  }
+
+  private updateTowerCooldownBars() {
+    for (const slotId of this.towerSprites.keys()) {
+      this.refreshTowerCooldownBar(slotId);
+    }
+  }
+
+  private refreshTowerCooldownBar(slotId: string) {
+    const container = this.towerSprites.get(slotId);
+    const tower = this.state.towers.get(slotId);
+    if (!container || !tower) return;
+
+    const cdFill = container.getData('cdFill') as Phaser.GameObjects.Rectangle | undefined;
+    const cdBg = container.getData('cdBg') as Phaser.GameObjects.Rectangle | undefined;
+    const cdBarW = container.getData('cdBarW') as number;
+    const cdY = container.getData('cdY') as number;
+    if (!cdFill || !cdBg || !cdBarW) return;
+
+    if (tower.towerId === 'barracks') {
+      cdBg.setVisible(false);
+      cdFill.setVisible(false);
+      return;
+    }
+
+    const interval = getTowerFireInterval(tower);
+    const ready = interval > 0 ? 1 - tower.fireCooldown / interval : 1;
+    const ratio = Phaser.Math.Clamp(ready, 0, 1);
+
+    cdBg.setVisible(true);
+    cdFill.setVisible(true);
+    cdFill.setSize(cdBarW * ratio, cdFill.height);
+    cdFill.setPosition(-cdBarW / 2, cdY);
+    cdFill.setFillStyle(ratio >= 0.98 ? 0x4ade80 : TOWER_COLORS[tower.towerId]);
+  }
+
+  /** Hover tháp đã xây hoặc slot trống → xem tầm tháp đang chọn */
+  private updateRangeFromPointer() {
+    if (this.config.readOnly) return;
+    const ptr = this.input.activePointer;
+    if (!ptr) return;
+    this.updateTowerRangeHover(ptr.worldX, ptr.worldY);
+  }
+
+  private updateTowerRangeHover(worldX: number, worldY: number) {
+    const { sx, sy } = this.getScale();
+    const towerHitR = 36;
+    let hoverTower: string | null = null;
+
+    for (const [slotId, container] of this.towerSprites) {
+      const dx = worldX - container.x;
+      const dy = worldY - container.y;
+      if (dx * dx + dy * dy <= towerHitR * towerHitR) {
+        hoverTower = slotId;
+        break;
+      }
+    }
+
+    let previewSlot: string | null = null;
+    if (!hoverTower && this.selectedTower !== 'barracks') {
+      const slotHit = 28 * Math.min(sx, sy);
+      let bestD = slotHit * slotHit;
+      for (const s of this.config.map.slots) {
+        if (this.state.towers.has(s.id)) continue;
+        const sx2 = s.x * sx;
+        const sy2 = s.y * sy;
+        const dd = (worldX - sx2) ** 2 + (worldY - sy2) ** 2;
+        if (dd < bestD) {
+          bestD = dd;
+          previewSlot = s.id;
+        }
+      }
+    }
+
+    const changed =
+      hoverTower !== this.rangeHoverSlotId || previewSlot !== this.rangePreviewSlotId;
+    this.rangeHoverSlotId = hoverTower;
+    this.rangePreviewSlotId = previewSlot;
+    if (changed) this.syncRangeRing();
+  }
+
+  private syncRangeRing() {
+    this.rangeRing?.destroy();
+    this.rangeRing = undefined;
+
+    const { sx, sy } = this.getScale();
+    const unit = Math.min(sx, sy);
+
+    let slotId = this.rangeHoverSlotId;
+    let towerId: TowerId | null = null;
+
+    if (slotId) {
+      const t = this.state.towers.get(slotId);
+      if (t && t.towerId !== 'barracks') towerId = t.towerId;
+      else slotId = null;
+    }
+
+    if (!slotId && this.rangePreviewSlotId && this.selectedTower !== 'barracks') {
+      slotId = this.rangePreviewSlotId;
+      towerId = this.selectedTower;
+    }
+
+    if (!slotId || !towerId) return;
+
+    const slot = this.config.map.slots.find((s) => s.id === slotId);
+    if (!slot) return;
+
+    const tower = this.state.towers.get(slotId);
+    const rangeMap = tower
+      ? getTowerCombatRange(tower)
+      : TOWERS[towerId].range + RANGE_SLACK;
+    const rangePx = rangeMap * unit;
+    const cx = slot.x * sx;
+    const cy = slot.y * sy;
+    const color = TOWER_COLORS[towerId];
+
+    const ring = this.add.circle(cx, cy, rangePx, color, 0.1);
+    ring.setStrokeStyle(3, color, 0.9);
+    ring.setDepth(12);
+    this.rangeRing = ring;
+  }
+
+  private playCombatShots(shots: CombatShot[]) {
+    const { sx, sy } = this.getScale();
+    const scale = Math.min(sx, sy);
+
+    for (const shot of shots) {
+      const slot = this.config.map.slots.find((s) => s.id === shot.slotId);
+      if (!slot) continue;
+
+      const fromX = slot.x * sx;
+      const fromY = slot.y * sy;
+
+      if (shot.aoe) {
+        const tx = shot.aoe.x * sx;
+        const ty = shot.aoe.y * sy;
+        playCombatShot(this, shot, fromX, fromY, tx, ty, scale, shot.aoe.radius * scale);
+        continue;
+      }
+
+      const enemy = this.state.enemies.find((e) => e.id === shot.enemyId);
+      if (!enemy) continue;
+
+      const pos = getEnemyMapPosition(this.state, enemy);
+      playCombatShot(this, shot, fromX, fromY, pos.x * sx, pos.y * sy, scale);
+
+      if (shot.chainEnemyIds?.length) {
+        for (const cid of shot.chainEnemyIds) {
+          const ce = this.state.enemies.find((e) => e.id === cid);
+          if (!ce) continue;
+          const cpos = getEnemyMapPosition(this.state, ce);
+          playElectricChain(this, pos.x * sx, pos.y * sy, cpos.x * sx, cpos.y * sy);
+        }
+      }
+    }
+  }
+
+  private createEnemyVisual(
+    e: {
+      id: number;
+      unitId: UnitId;
+      hp: number;
+      maxHp: number;
+      flying: boolean;
+      isBoss: boolean;
+    },
+    x: number,
+    y: number,
+  ): Phaser.GameObjects.Container {
+    const udef = UNITS[e.unitId];
+    const isBoss = e.isBoss;
+    const bodyColor = isBoss ? 0xdc2626 : e.flying ? 0xd8daff : 0xffb783;
+    const radius = isBoss ? 18 : e.flying ? 9 : 11;
+
+    const container = this.add.container(x, y);
+    const body = this.add.circle(0, 0, radius, bodyColor, 0.95);
+    body.setStrokeStyle(isBoss ? 3 : 1, isBoss ? 0xff4444 : 0xffffff, isBoss ? 1 : 0.55);
+
+    const barW = isBoss ? 72 : 44;
+    const barH = isBoss ? 6 : 4;
+    const hpBg = this.add.rectangle(0, -radius - 12, barW, barH, 0x1a2030, 0.9);
+    const ratio = e.hp / e.maxHp;
+    const hpFill = this.add.rectangle(
+      -barW / 2,
+      -radius - 12,
+      barW * ratio,
+      barH,
+      ratio > 0.35 ? 0x4ade80 : 0xf87171,
+      1,
+    );
+    hpFill.setOrigin(0, 0.5);
+    hpFill.setData('barW', barW);
+
+    const label = isBoss ? 'BOSS' : (UNIT_LABELS[e.unitId] ?? udef.name);
+    const nameText = this.add.text(0, -radius - (isBoss ? 28 : 22), label, {
+      fontSize: isBoss ? '18px' : '10px',
+      fontFamily: 'JetBrains Mono, monospace',
+      color: isBoss ? '#ff3333' : '#dae2fd',
+      fontStyle: isBoss ? 'bold' : 'normal',
+      stroke: '#0b1326',
+      strokeThickness: isBoss ? 4 : 2,
+    });
+    nameText.setOrigin(0.5, 0.5);
+
+    container.add([body, hpBg, hpFill, nameText]);
+    container.setDepth(isBoss ? 22 : 20);
+    container.setData('hpFill', hpFill);
+    container.setData('barW', barW);
+    container.setData('radius', radius);
+    container.setData('hpYOffset', -radius - 12);
+    return container;
+  }
+
+  private updateEnemyHpBar(container: Phaser.GameObjects.Container, hp: number, maxHp: number) {
+    const hpFill = container.getData('hpFill') as Phaser.GameObjects.Rectangle;
+    const barW = container.getData('barW') as number;
+    const yOff = container.getData('hpYOffset') as number;
+    if (!hpFill || !barW) return;
+    const ratio = Math.max(0, Math.min(1, hp / maxHp));
+    hpFill.setSize(barW * ratio, hpFill.height);
+    hpFill.setPosition(-barW / 2, yOff);
+    hpFill.setFillStyle(ratio > 0.35 ? 0x4ade80 : 0xf87171);
   }
 
   private syncEnemies() {
     const { sx, sy } = this.getScale();
-    const alive = new Set(this.state.enemies.map((e) => e.id));
+    const alive = new Set(this.state.enemies.map((en) => en.id));
 
-    for (const [id, sprite] of this.enemySprites) {
+    for (const [id, container] of this.enemySprites) {
       if (!alive.has(id)) {
-        sprite.destroy();
+        container.destroy();
         this.enemySprites.delete(id);
       }
     }
 
     for (const e of this.state.enemies) {
-      const lane = this.config.map.lanes[e.lane] ?? this.config.map.lanes[0];
-      const pos = positionOnPath(lane.waypoints, e.progress);
+      const pos = getEnemyMapPosition(this.state, e);
       const x = pos.x * sx;
       const y = pos.y * sy;
-      let sprite = this.enemySprites.get(e.id);
-      if (!sprite) {
-        const color = e.flying ? 0xd8daff : 0xffb783;
-        sprite = this.add.circle(x, y, e.flying ? 8 : 10, color, 0.95);
-        sprite.setStrokeStyle(1, 0xffffff, 0.5);
-        sprite.setDepth(20);
-        this.enemySprites.set(e.id, sprite);
+      let container = this.enemySprites.get(e.id);
+      if (!container) {
+        container = this.createEnemyVisual(e, x, y);
+        this.enemySprites.set(e.id, container);
       } else {
-        sprite.setPosition(x, y);
+        container.setPosition(x, y);
+        this.updateEnemyHpBar(container, e.hp, e.maxHp);
       }
     }
   }

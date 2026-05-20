@@ -61,10 +61,16 @@ docs/             # GDD & architecture
 UI/               # HTML/CSS mockups
 ```
 
+## Chơi Online (Vercel + bạn bè)
+
+- Trang chủ → **Tạo phòng** / **Tham gia** (mã 6 ký tự).
+- **Client** deploy **Vercel**; **server Socket.io** deploy **Render** (miễn phí).
+- Chi tiết: [docs/DEPLOY_ONLINE.md](docs/DEPLOY_ONLINE.md)
+
 ## Roadmap
 
 1. **Phase 1** — Offline sim (current): slots, pathing, economy, basic combat
-2. **Phase 2** — Online PvP: authoritative server, matchmaking, event sync
+2. **Phase 2** — Online PvP: phòng 2 người, sync gửi quân (đang có); thêm đồng bộ tháp / kết thúc trận
 3. **Phase 3** — VFX/SFX, talents, ranked, extra maps
 
 ## Tech Stack

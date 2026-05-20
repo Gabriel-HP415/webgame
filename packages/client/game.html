@@ -16,11 +16,14 @@
 
   <aside class="hud-dock" id="tower-dock">
     <h2>TRIỂN KHAI</h2>
-    <button type="button" class="dock-btn dock-btn--tower active" data-tower="mortar">
-      <span class="dock-label">Mortar</span><span class="dock-price" data-cost-for="mortar">· 120 vàng</span>
+    <button type="button" class="dock-btn dock-btn--tower active" data-tower="flak">
+      <span class="dock-label">Flak (AA)</span><span class="dock-price" data-cost-for="flak">· 85 vàng</span>
     </button>
     <button type="button" class="dock-btn dock-btn--tower" data-tower="machine_gun">
       <span class="dock-label">Machine Gun</span><span class="dock-price" data-cost-for="machine_gun">· 100 vàng</span>
+    </button>
+    <button type="button" class="dock-btn dock-btn--tower" data-tower="mortar">
+      <span class="dock-label">Mortar</span><span class="dock-price" data-cost-for="mortar">· 120 vàng</span>
     </button>
     <button type="button" class="dock-btn dock-btn--tower" data-tower="laser">
       <span class="dock-label">Laser</span><span class="dock-price" data-cost-for="laser">· 150 vàng</span>
@@ -28,6 +31,14 @@
     <button type="button" class="dock-btn dock-btn--tower" data-tower="barracks">
       <span class="dock-label">Barracks</span><span class="dock-price" data-cost-for="barracks">· 110 vàng</span>
     </button>
+
+    <section id="dock-tower-info" class="dock-tower-info" aria-label="Thông tin tháp">
+      <h3 id="dock-info-title">Flak</h3>
+      <p id="dock-info-summary" class="dock-info-summary"></p>
+      <div id="dock-info-traits" class="dock-info-traits"></div>
+      <ul id="dock-info-stats" class="dock-info-stats"></ul>
+    </section>
+
     <hr />
     <div id="dock-sends" class="dock-sends">
       <h3>GỬI QUÂN (PvP)</h3>
@@ -98,6 +109,23 @@
     </div>
   </main>
 
+  <div id="online-wait" class="online-wait" role="status" aria-live="polite" aria-hidden="true">
+    <div class="online-wait-card">
+      <h2>Chờ trận Online</h2>
+      <p id="online-wait-msg">Đang kết nối…</p>
+      <p class="online-wait-hint">Gửi link hoặc mã phòng cho bạn bè. Cần máy chủ game (Render/Railway) — xem README.</p>
+      <a class="online-wait-link" href="index.html">← Trang chủ</a>
+    </div>
+  </div>
+
+  <div id="branch-modal" class="branch-modal" role="dialog" aria-modal="true" aria-labelledby="branch-modal-title" aria-hidden="true">
+    <div class="branch-modal-card">
+      <h2 id="branch-modal-title">Nâng cấp tối đa (Lv3)</h2>
+      <p class="branch-modal-hint">Chọn <strong>1</strong> hiệu ứng trong 2 lựa chọn ngẫu nhiên:</p>
+      <div id="branch-options" class="branch-options"></div>
+    </div>
+  </div>
+
   <div id="game-over" class="game-over" role="alertdialog" aria-modal="true" aria-labelledby="game-over-title" aria-hidden="true">
     <div class="game-over-card">
       <h2 id="game-over-title" class="game-over-title">GAME OVER</h2>
@@ -111,8 +139,9 @@
       <h2 id="match-intro-title">Cách chơi</h2>
       <ol class="match-intro-steps">
         <li>Chọn <strong>loại tháp</strong> ở cột trái (có dòng giá <strong>vàng</strong>).</li>
-        <li><strong>Click vào vòng tròn slot</strong> trên bản đồ để xây — vàng sẽ trừ ngay.</li>
-        <li><strong>Chuột phải</strong> lên tháp để bán (hoàn một phần vàng).</li>
+        <li><strong>Click slot trống</strong> để xây tháp (Lv1) · <strong>click tháp đã xây</strong> để nâng cấp.</li>
+        <li>Lv3: chọn 1 hiệu ứng (lửa / băng / độc / điện). <strong>Chuột phải</strong> bán tháp.</li>
+        <li>Mỗi <strong>10 đợt</strong> xuất hiện Boss (chữ đỏ, máu cao, đi chậm).</li>
       </ol>
       <button type="button" class="match-intro-btn" id="btn-start-match">Bắt đầu</button>
       <p class="match-intro-skip">Lần sau không hiện lại (trình duyệt này).</p>
